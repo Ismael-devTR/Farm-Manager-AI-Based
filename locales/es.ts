@@ -12,6 +12,14 @@ export const es: Dictionary = {
     noData: "Sin datos aún.",
     required: "*",
   },
+  confirms: {
+    deleteBatch: "¿Eliminar este lote y todos sus registros? Esta acción no se puede deshacer.",
+    markAsSold: "¿Marcar este lote como vendido? No podrás agregar registros después.",
+    deleteWeight: "¿Eliminar este registro de peso?",
+    deleteFeed: "¿Eliminar este registro de alimento?",
+    deleteExpense: "¿Eliminar este gasto?",
+    deleteSchedule: "¿Eliminar esta programación?",
+  },
   nav: {
     dashboard: "Panel",
     batches: "Lotes",

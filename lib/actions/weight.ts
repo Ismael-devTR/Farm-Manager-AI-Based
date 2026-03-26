@@ -33,7 +33,7 @@ export async function addWeightRecord(
   }
 
   await prisma.weightRecord.create({
-    data: { batchId, recordDate: new Date(recordDate), weekNumber, totalWeight, animalCount, notes },
+    data: { batchId, recordDate: new Date(`${recordDate}T12:00:00`), weekNumber, totalWeight, animalCount, notes },
   });
 
   revalidatePath(`/batches/${batchId}`);

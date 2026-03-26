@@ -19,6 +19,7 @@ import { computeBatchMetrics } from "@/lib/calculations";
 import { BatchStatus } from "@/app/generated/prisma/enums";
 import { getLocale } from "@/lib/get-locale";
 import { getDictionary } from "@/locales";
+import ConfirmButton from "@/components/ConfirmButton";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -66,17 +67,19 @@ export default async function BatchDetailPage({ params }: Props) {
         </div>
         <div className="flex gap-2">
           {batch.status === "ACTIVE" && (
-            <form action={async () => { "use server"; await updateBatchStatus(id, BatchStatus.SOLD); }}>
-              <button type="submit" className="text-sm border border-gray-300 px-3 py-1.5 rounded-lg hover:bg-gray-50 transition-colors">
-                {t.markAsSold}
-              </button>
-            </form>
+            <ConfirmButton
+              action={async () => { "use server"; await updateBatchStatus(id, BatchStatus.SOLD); }}
+              message={dict.confirms.markAsSold}
+              label={t.markAsSold}
+              className="text-sm border border-gray-300 px-3 py-1.5 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+            />
           )}
-          <form action={async () => { "use server"; await deleteBatch(id); }}>
-            <button type="submit" className="text-sm border border-red-200 text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors">
-              {dict.common.delete}
-            </button>
-          </form>
+          <ConfirmButton
+            action={async () => { "use server"; await deleteBatch(id); }}
+            message={dict.confirms.deleteBatch}
+            label={dict.common.delete}
+            className="text-sm border border-red-200 text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50"
+          />
         </div>
       </div>
 
@@ -137,9 +140,12 @@ export default async function BatchDetailPage({ params }: Props) {
                   <td className="px-3 py-2 text-right">{r.animalCount}</td>
                   <td className="px-3 py-2 text-right">{(r.totalWeight / r.animalCount).toFixed(1)}</td>
                   <td className="px-3 py-2 text-right">
-                    <form action={async () => { "use server"; await deleteWeightRecord(r.id, id); }}>
-                      <button type="submit" className="text-xs text-red-500 hover:underline">{dict.common.delete}</button>
-                    </form>
+                    <ConfirmButton
+                      action={async () => { "use server"; await deleteWeightRecord(r.id, id); }}
+                      message={dict.confirms.deleteWeight}
+                      label={dict.common.delete}
+                      className="text-xs text-red-500 hover:underline"
+                    />
                   </td>
                 </tr>
               ))}
@@ -172,9 +178,12 @@ export default async function BatchDetailPage({ params }: Props) {
                   <td className="px-3 py-2 text-right">{r.costPerKg.toFixed(2)}</td>
                   <td className="px-3 py-2 text-right font-medium">${(r.quantityKg * r.costPerKg).toFixed(2)}</td>
                   <td className="px-3 py-2 text-right">
-                    <form action={async () => { "use server"; await deleteFeedRecord(r.id, id); }}>
-                      <button type="submit" className="text-xs text-red-500 hover:underline">{dict.common.delete}</button>
-                    </form>
+                    <ConfirmButton
+                      action={async () => { "use server"; await deleteFeedRecord(r.id, id); }}
+                      message={dict.confirms.deleteFeed}
+                      label={dict.common.delete}
+                      className="text-xs text-red-500 hover:underline"
+                    />
                   </td>
                 </tr>
               ))}
@@ -205,9 +214,12 @@ export default async function BatchDetailPage({ params }: Props) {
                   <td className="px-3 py-2">{e.description}</td>
                   <td className="px-3 py-2 text-right font-medium">${e.amount.toFixed(2)}</td>
                   <td className="px-3 py-2 text-right">
-                    <form action={async () => { "use server"; await deleteExpense(e.id, id); }}>
-                      <button type="submit" className="text-xs text-red-500 hover:underline">{dict.common.delete}</button>
-                    </form>
+                    <ConfirmButton
+                      action={async () => { "use server"; await deleteExpense(e.id, id); }}
+                      message={dict.confirms.deleteExpense}
+                      label={dict.common.delete}
+                      className="text-xs text-red-500 hover:underline"
+                    />
                   </td>
                 </tr>
               ))}
@@ -244,9 +256,12 @@ export default async function BatchDetailPage({ params }: Props) {
                     </form>
                   </td>
                   <td className="px-3 py-2 text-right">
-                    <form action={async () => { "use server"; await deleteSchedule(s.id, id); }}>
-                      <button type="submit" className="text-xs text-red-500 hover:underline">{dict.common.delete}</button>
-                    </form>
+                    <ConfirmButton
+                      action={async () => { "use server"; await deleteSchedule(s.id, id); }}
+                      message={dict.confirms.deleteSchedule}
+                      label={dict.common.delete}
+                      className="text-xs text-red-500 hover:underline"
+                    />
                   </td>
                 </tr>
               ))}

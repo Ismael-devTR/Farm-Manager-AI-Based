@@ -26,7 +26,7 @@ export async function addSchedule(
   }
 
   await prisma.vaccinationSchedule.create({
-    data: { batchId, scheduledDate: new Date(scheduledDate), type, product, notes },
+    data: { batchId, scheduledDate: new Date(`${scheduledDate}T12:00:00`), type, product, notes },
   });
 
   revalidatePath(`/batches/${batchId}`);

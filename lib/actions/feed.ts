@@ -26,7 +26,7 @@ export async function addFeedRecord(
   }
 
   await prisma.feedRecord.create({
-    data: { batchId, date: new Date(date), feedType, quantityKg, costPerKg, notes },
+    data: { batchId, date: new Date(`${date}T12:00:00`), feedType, quantityKg, costPerKg, notes },
   });
 
   revalidatePath(`/batches/${batchId}`);

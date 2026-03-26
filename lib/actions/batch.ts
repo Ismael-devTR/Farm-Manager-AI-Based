@@ -7,7 +7,7 @@ import { BatchStatus } from "@/app/generated/prisma/enums";
 import { getLocale } from "@/lib/get-locale";
 import { getDictionary } from "@/locales";
 
-export type ActionState = { error?: string };
+export type ActionState = { error?: string; batchId?: string };
 
 export async function createBatch(
   _prev: ActionState,
@@ -29,11 +29,11 @@ export async function createBatch(
   }
 
   const batch = await prisma.batch.create({
-    data: { name, entryDate: new Date(entryDate), animalCount, birthWeeks, initialWeight, costPerAnimal, notes },
+    data: { name, entryDate: new Date(`${entryDate}T12:00:00`), animalCount, birthWeeks, initialWeight, costPerAnimal, notes },
   });
 
   revalidatePath("/batches");
-  redirect(`/batches/${batch.id}`);
+  return { batchId: batch.id };
 }
 
 export async function updateBatchStatus(batchId: string, status: BatchStatus): Promise<void> {
@@ -43,7 +43,13 @@ export async function updateBatchStatus(batchId: string, status: BatchStatus): P
 }
 
 export async function deleteBatch(batchId: string): Promise<void> {
-  await prisma.batch.delete({ where: { id: batchId } });
+  await prisma.$transaction([
+    prisma.vaccinationSchedule.deleteMany({ where: { batchId } }),
+    prisma.expense.deleteMany({ where: { batchId } }),
+    prisma.feedRecord.deleteMany({ where: { batchId } }),
+    prisma.weightRecord.deleteMany({ where: { batchId } }),
+    prisma.batch.delete({ where: { id: batchId } }),
+  ]);
   revalidatePath("/batches");
   redirect("/batches");
 }

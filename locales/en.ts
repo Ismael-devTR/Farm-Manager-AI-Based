@@ -10,6 +10,14 @@ export const en = {
     noData: "No data yet.",
     required: "*",
   },
+  confirms: {
+    deleteBatch: "Delete this batch and all its records? This action cannot be undone.",
+    markAsSold: "Mark this batch as sold? You won't be able to add new records after this.",
+    deleteWeight: "Delete this weight record?",
+    deleteFeed: "Delete this feed record?",
+    deleteExpense: "Delete this expense?",
+    deleteSchedule: "Delete this scheduled item?",
+  },
   nav: {
     dashboard: "Dashboard",
     batches: "Batches",

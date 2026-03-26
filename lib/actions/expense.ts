@@ -27,7 +27,7 @@ export async function addExpense(
   }
 
   await prisma.expense.create({
-    data: { batchId, date: new Date(date), category, description, amount, notes },
+    data: { batchId, date: new Date(`${date}T12:00:00`), category, description, amount, notes },
   });
 
   revalidatePath(`/batches/${batchId}`);

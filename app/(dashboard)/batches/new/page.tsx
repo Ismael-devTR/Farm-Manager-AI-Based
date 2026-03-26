@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createBatch } from "@/lib/actions/batch";
 import { useDict } from "@/components/LocaleProvider";
@@ -8,7 +9,12 @@ import { useDict } from "@/components/LocaleProvider";
 export default function NewBatchPage() {
   const dict = useDict();
   const t = dict.batchForm;
+  const router = useRouter();
   const [state, action, pending] = useActionState(createBatch, {});
+
+  useEffect(() => {
+    if (state.batchId) router.push(`/batches/${state.batchId}`);
+  }, [state.batchId, router]);
   const today = new Date().toISOString().split("T")[0];
 
   const cls = "w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500";
