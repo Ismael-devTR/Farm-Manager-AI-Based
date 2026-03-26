@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { BatchStatus } from "@/app/generated/prisma/enums";
+import { getLocale } from "@/lib/get-locale";
+import { getDictionary } from "@/locales";
 
 export type ActionState = { error?: string };
 
@@ -11,6 +13,9 @@ export async function createBatch(
   _prev: ActionState,
   formData: FormData
 ): Promise<ActionState> {
+  const locale = await getLocale();
+  const t = getDictionary(locale).batchForm;
+
   const name = formData.get("name") as string;
   const entryDate = formData.get("entryDate") as string;
   const animalCount = Number(formData.get("animalCount"));
@@ -20,29 +25,18 @@ export async function createBatch(
   const notes = (formData.get("notes") as string) || undefined;
 
   if (!name || !entryDate || !animalCount || !birthWeeks || !initialWeight || !costPerAnimal) {
-    return { error: "All required fields must be filled." };
+    return { error: t.errorRequired };
   }
 
   const batch = await prisma.batch.create({
-    data: {
-      name,
-      entryDate: new Date(entryDate),
-      animalCount,
-      birthWeeks,
-      initialWeight,
-      costPerAnimal,
-      notes,
-    },
+    data: { name, entryDate: new Date(entryDate), animalCount, birthWeeks, initialWeight, costPerAnimal, notes },
   });
 
   revalidatePath("/batches");
   redirect(`/batches/${batch.id}`);
 }
 
-export async function updateBatchStatus(
-  batchId: string,
-  status: BatchStatus
-): Promise<void> {
+export async function updateBatchStatus(batchId: string, status: BatchStatus): Promise<void> {
   await prisma.batch.update({ where: { id: batchId }, data: { status } });
   revalidatePath(`/batches/${batchId}`);
   revalidatePath("/batches");

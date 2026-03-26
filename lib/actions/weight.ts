@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { getLocale } from "@/lib/get-locale";
+import { getDictionary } from "@/locales";
 
 export type ActionState = { error?: string };
 
@@ -10,6 +12,9 @@ export async function addWeightRecord(
   _prev: ActionState,
   formData: FormData
 ): Promise<ActionState> {
+  const locale = await getLocale();
+  const t = getDictionary(locale).weightForm;
+
   const recordDate = formData.get("recordDate") as string;
   const weekNumber = Number(formData.get("weekNumber"));
   const totalWeight = Number(formData.get("totalWeight"));
@@ -17,14 +22,14 @@ export async function addWeightRecord(
   const notes = (formData.get("notes") as string) || undefined;
 
   if (!recordDate || !weekNumber || !totalWeight || !animalCount) {
-    return { error: "All required fields must be filled." };
+    return { error: t.errorRequired };
   }
 
   const exists = await prisma.weightRecord.findUnique({
     where: { batchId_weekNumber: { batchId, weekNumber } },
   });
   if (exists) {
-    return { error: `Week ${weekNumber} record already exists for this batch.` };
+    return { error: t.errorDuplicate.replace("{week}", String(weekNumber)) };
   }
 
   await prisma.weightRecord.create({

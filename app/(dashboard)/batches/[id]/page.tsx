@@ -17,11 +17,20 @@ import CostBreakdownChart from "@/components/charts/CostBreakdownChart";
 import AccumulatedCostChart from "@/components/charts/AccumulatedCostChart";
 import { computeBatchMetrics } from "@/lib/calculations";
 import { BatchStatus } from "@/app/generated/prisma/enums";
+import { getLocale } from "@/lib/get-locale";
+import { getDictionary } from "@/locales";
 
 type Props = { params: Promise<{ id: string }> };
 
 export default async function BatchDetailPage({ params }: Props) {
   const { id } = await params;
+  const locale = await getLocale();
+  const dict = getDictionary(locale);
+  const t = dict.batches;
+  const wt = dict.weightForm;
+  const ft = dict.feedForm;
+  const et = dict.expenseForm;
+  const st = dict.scheduleForm;
 
   const batch = await prisma.batch.findUnique({
     where: { id },
@@ -49,23 +58,23 @@ export default async function BatchDetailPage({ params }: Props) {
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <Link href="/batches" className="text-sm text-gray-500 hover:text-gray-700">← Batches</Link>
+          <Link href="/batches" className="text-sm text-gray-500 hover:text-gray-700">{dict.common.back}</Link>
           <h1 className="text-2xl font-bold text-gray-900 mt-1">{batch.name}</h1>
           <p className="text-sm text-gray-500 mt-0.5">
-            Entered {batch.entryDate.toLocaleDateString()} · {batch.animalCount} animals · {batch.birthWeeks}w old at entry
+            {batch.entryDate.toLocaleDateString()} · {batch.animalCount} {t.animalsSuffix} · {batch.birthWeeks}w {t.oldAtEntry}
           </p>
         </div>
         <div className="flex gap-2">
           {batch.status === "ACTIVE" && (
             <form action={async () => { "use server"; await updateBatchStatus(id, BatchStatus.SOLD); }}>
               <button type="submit" className="text-sm border border-gray-300 px-3 py-1.5 rounded-lg hover:bg-gray-50 transition-colors">
-                Mark as sold
+                {t.markAsSold}
               </button>
             </form>
           )}
           <form action={async () => { "use server"; await deleteBatch(id); }}>
             <button type="submit" className="text-sm border border-red-200 text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors">
-              Delete
+              {dict.common.delete}
             </button>
           </form>
         </div>
@@ -73,81 +82,49 @@ export default async function BatchDetailPage({ params }: Props) {
 
       {/* Cost summary */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <StatCard label="Total cost" value={`$${metrics.totalCost.toFixed(2)}`} />
-        <StatCard label="Cost / animal" value={`$${metrics.costPerAnimal.toFixed(2)}`} />
-        <StatCard
-          label="Cost / kg produced"
-          value={metrics.costPerKgProduced != null ? `$${metrics.costPerKgProduced.toFixed(2)}` : "—"}
-        />
-        <StatCard
-          label="Feed conversion (FCR)"
-          value={metrics.fcr != null ? metrics.fcr.toFixed(2) : "—"}
-          hint={metrics.fcr != null ? "kg feed / kg gain" : undefined}
-        />
+        <StatCard label={t.totalCost} value={`$${metrics.totalCost.toFixed(2)}`} />
+        <StatCard label={t.costPerAnimal} value={`$${metrics.costPerAnimal.toFixed(2)}`} />
+        <StatCard label={t.costPerKgProduced} value={metrics.costPerKgProduced != null ? `$${metrics.costPerKgProduced.toFixed(2)}` : "—"} />
+        <StatCard label={t.fcr} value={metrics.fcr != null ? metrics.fcr.toFixed(2) : "—"} hint={metrics.fcr != null ? t.fcrHint : undefined} />
       </div>
 
       {/* Weight summary */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <StatCard label="Initial total weight" value={`${metrics.initialTotalWeight.toFixed(0)} kg`} />
-        <StatCard
-          label="Current total weight"
-          value={metrics.currentTotalWeight != null ? `${metrics.currentTotalWeight.toFixed(0)} kg` : "—"}
-        />
-        <StatCard
-          label="Total weight gain"
-          value={metrics.totalWeightGain != null ? `${metrics.totalWeightGain.toFixed(0)} kg` : "—"}
-        />
-        <StatCard
-          label="Avg weight / animal"
-          value={metrics.avgCurrentWeight != null ? `${metrics.avgCurrentWeight.toFixed(1)} kg` : "—"}
-        />
+        <StatCard label={t.initialTotalWeight} value={`${metrics.initialTotalWeight.toFixed(0)} kg`} />
+        <StatCard label={t.currentTotalWeight} value={metrics.currentTotalWeight != null ? `${metrics.currentTotalWeight.toFixed(0)} kg` : "—"} />
+        <StatCard label={t.totalWeightGain} value={metrics.totalWeightGain != null ? `${metrics.totalWeightGain.toFixed(0)} kg` : "—"} />
+        <StatCard label={t.avgWeightPerAnimal} value={metrics.avgCurrentWeight != null ? `${metrics.avgCurrentWeight.toFixed(1)} kg` : "—"} />
       </div>
 
       {/* Charts */}
       <div className="grid grid-cols-2 gap-4">
-        <Section title="Avg weight / animal (kg)">
-          <WeightChart records={batch.weightRecords} />
+        <Section title={t.chartsWeight}><WeightChart records={batch.weightRecords} /></Section>
+        <Section title={t.chartsFeed}><FeedChart records={batch.feedRecords} /></Section>
+        <Section title={t.chartsAccCost}>
+          <AccumulatedCostChart animalCost={metrics.animalCost} feedRecords={batch.feedRecords} expenses={batch.expenses} />
         </Section>
-        <Section title="Feed consumption (kg)">
-          <FeedChart records={batch.feedRecords} />
-        </Section>
-        <Section title="Accumulated cost">
-          <AccumulatedCostChart
-            animalCost={metrics.animalCost}
-            feedRecords={batch.feedRecords}
-            expenses={batch.expenses}
-          />
-        </Section>
-        <Section title="Cost breakdown">
-          <CostBreakdownChart
-            animalCost={metrics.animalCost}
-            feedCost={metrics.totalFeedCost}
-            expenseCost={metrics.totalExpenseCost}
-          />
+        <Section title={t.chartsBreakdown}>
+          <CostBreakdownChart animalCost={metrics.animalCost} feedCost={metrics.totalFeedCost} expenseCost={metrics.totalExpenseCost} />
         </Section>
       </div>
 
-      {/* Sale price simulator */}
-      <Section title="Sale price simulation">
-        <SalePriceSimulator
-          totalCost={metrics.totalCost}
-          animalCount={batch.animalCount}
-          avgCurrentWeight={metrics.avgCurrentWeight}
-        />
+      {/* Sale simulator */}
+      <Section title={t.simulatorSection}>
+        <SalePriceSimulator totalCost={metrics.totalCost} animalCount={batch.animalCount} avgCurrentWeight={metrics.avgCurrentWeight} />
       </Section>
 
       {/* Weekly weights */}
-      <Section title="Weekly weights">
+      <Section title={t.weeklyWeights}>
         <WeightForm batchId={id} />
         {batch.weightRecords.length > 0 && (
           <table className="w-full text-sm mt-4">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                <th className="text-left px-3 py-2 font-medium text-gray-600">Week</th>
-                <th className="text-left px-3 py-2 font-medium text-gray-600">Date</th>
-                <th className="text-right px-3 py-2 font-medium text-gray-600">Total (kg)</th>
-                <th className="text-right px-3 py-2 font-medium text-gray-600">Animals</th>
-                <th className="text-right px-3 py-2 font-medium text-gray-600">Avg (kg)</th>
+                <th className="text-left px-3 py-2 font-medium text-gray-600">{wt.weekCol}</th>
+                <th className="text-left px-3 py-2 font-medium text-gray-600">{wt.dateCol}</th>
+                <th className="text-right px-3 py-2 font-medium text-gray-600">{wt.totalCol}</th>
+                <th className="text-right px-3 py-2 font-medium text-gray-600">{wt.animalsCol}</th>
+                <th className="text-right px-3 py-2 font-medium text-gray-600">{wt.avgCol}</th>
                 <th />
               </tr>
             </thead>
@@ -161,7 +138,7 @@ export default async function BatchDetailPage({ params }: Props) {
                   <td className="px-3 py-2 text-right">{(r.totalWeight / r.animalCount).toFixed(1)}</td>
                   <td className="px-3 py-2 text-right">
                     <form action={async () => { "use server"; await deleteWeightRecord(r.id, id); }}>
-                      <button type="submit" className="text-xs text-red-500 hover:underline">Delete</button>
+                      <button type="submit" className="text-xs text-red-500 hover:underline">{dict.common.delete}</button>
                     </form>
                   </td>
                 </tr>
@@ -172,17 +149,17 @@ export default async function BatchDetailPage({ params }: Props) {
       </Section>
 
       {/* Feed records */}
-      <Section title={`Feed consumption — ${metrics.totalFeedKg.toFixed(0)} kg total · $${metrics.totalFeedCost.toFixed(2)}`}>
+      <Section title={`${t.feedConsumption} — ${metrics.totalFeedKg.toFixed(0)} kg ${t.totalSuffix} · $${metrics.totalFeedCost.toFixed(2)}`}>
         <FeedForm batchId={id} />
         {batch.feedRecords.length > 0 && (
           <table className="w-full text-sm mt-4">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                <th className="text-left px-3 py-2 font-medium text-gray-600">Date</th>
-                <th className="text-left px-3 py-2 font-medium text-gray-600">Type</th>
-                <th className="text-right px-3 py-2 font-medium text-gray-600">Qty (kg)</th>
-                <th className="text-right px-3 py-2 font-medium text-gray-600">$/kg</th>
-                <th className="text-right px-3 py-2 font-medium text-gray-600">Total</th>
+                <th className="text-left px-3 py-2 font-medium text-gray-600">{ft.dateCol}</th>
+                <th className="text-left px-3 py-2 font-medium text-gray-600">{ft.typeCol}</th>
+                <th className="text-right px-3 py-2 font-medium text-gray-600">{ft.qtyCol}</th>
+                <th className="text-right px-3 py-2 font-medium text-gray-600">{ft.costCol}</th>
+                <th className="text-right px-3 py-2 font-medium text-gray-600">{ft.totalCol}</th>
                 <th />
               </tr>
             </thead>
@@ -196,7 +173,7 @@ export default async function BatchDetailPage({ params }: Props) {
                   <td className="px-3 py-2 text-right font-medium">${(r.quantityKg * r.costPerKg).toFixed(2)}</td>
                   <td className="px-3 py-2 text-right">
                     <form action={async () => { "use server"; await deleteFeedRecord(r.id, id); }}>
-                      <button type="submit" className="text-xs text-red-500 hover:underline">Delete</button>
+                      <button type="submit" className="text-xs text-red-500 hover:underline">{dict.common.delete}</button>
                     </form>
                   </td>
                 </tr>
@@ -207,16 +184,16 @@ export default async function BatchDetailPage({ params }: Props) {
       </Section>
 
       {/* Expenses */}
-      <Section title={`Expenses — $${metrics.totalExpenseCost.toFixed(2)} total`}>
+      <Section title={`${t.expensesSection} — $${metrics.totalExpenseCost.toFixed(2)} ${t.totalSuffix}`}>
         <ExpenseForm batchId={id} />
         {batch.expenses.length > 0 && (
           <table className="w-full text-sm mt-4">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                <th className="text-left px-3 py-2 font-medium text-gray-600">Date</th>
-                <th className="text-left px-3 py-2 font-medium text-gray-600">Category</th>
-                <th className="text-left px-3 py-2 font-medium text-gray-600">Description</th>
-                <th className="text-right px-3 py-2 font-medium text-gray-600">Amount</th>
+                <th className="text-left px-3 py-2 font-medium text-gray-600">{et.dateCol}</th>
+                <th className="text-left px-3 py-2 font-medium text-gray-600">{et.categoryCol}</th>
+                <th className="text-left px-3 py-2 font-medium text-gray-600">{et.descriptionCol}</th>
+                <th className="text-right px-3 py-2 font-medium text-gray-600">{et.amountCol}</th>
                 <th />
               </tr>
             </thead>
@@ -224,14 +201,12 @@ export default async function BatchDetailPage({ params }: Props) {
               {batch.expenses.map((e) => (
                 <tr key={e.id}>
                   <td className="px-3 py-2 text-gray-600">{e.date.toLocaleDateString()}</td>
-                  <td className="px-3 py-2">
-                    <span className="text-xs bg-gray-100 px-1.5 py-0.5 rounded">{e.category}</span>
-                  </td>
+                  <td className="px-3 py-2"><span className="text-xs bg-gray-100 px-1.5 py-0.5 rounded">{e.category}</span></td>
                   <td className="px-3 py-2">{e.description}</td>
                   <td className="px-3 py-2 text-right font-medium">${e.amount.toFixed(2)}</td>
                   <td className="px-3 py-2 text-right">
                     <form action={async () => { "use server"; await deleteExpense(e.id, id); }}>
-                      <button type="submit" className="text-xs text-red-500 hover:underline">Delete</button>
+                      <button type="submit" className="text-xs text-red-500 hover:underline">{dict.common.delete}</button>
                     </form>
                   </td>
                 </tr>
@@ -241,17 +216,17 @@ export default async function BatchDetailPage({ params }: Props) {
         )}
       </Section>
 
-      {/* Vaccination / deworming schedules */}
-      <Section title="Vaccination & deworming schedule">
+      {/* Schedules */}
+      <Section title={t.scheduleSection}>
         <ScheduleForm batchId={id} />
         {batch.vaccinationSchedules.length > 0 && (
           <table className="w-full text-sm mt-4">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                <th className="text-left px-3 py-2 font-medium text-gray-600">Date</th>
-                <th className="text-left px-3 py-2 font-medium text-gray-600">Type</th>
-                <th className="text-left px-3 py-2 font-medium text-gray-600">Product</th>
-                <th className="text-left px-3 py-2 font-medium text-gray-600">Status</th>
+                <th className="text-left px-3 py-2 font-medium text-gray-600">{st.dateCol}</th>
+                <th className="text-left px-3 py-2 font-medium text-gray-600">{st.typeCol}</th>
+                <th className="text-left px-3 py-2 font-medium text-gray-600">{st.productCol}</th>
+                <th className="text-left px-3 py-2 font-medium text-gray-600">{st.statusCol}</th>
                 <th />
               </tr>
             </thead>
@@ -259,21 +234,18 @@ export default async function BatchDetailPage({ params }: Props) {
               {batch.vaccinationSchedules.map((s) => (
                 <tr key={s.id}>
                   <td className="px-3 py-2 text-gray-600">{s.scheduledDate.toLocaleDateString()}</td>
-                  <td className="px-3 py-2">
-                    <span className="text-xs bg-gray-100 px-1.5 py-0.5 rounded">{s.type}</span>
-                  </td>
+                  <td className="px-3 py-2"><span className="text-xs bg-gray-100 px-1.5 py-0.5 rounded">{s.type}</span></td>
                   <td className="px-3 py-2">{s.product}</td>
                   <td className="px-3 py-2">
                     <form action={async () => { "use server"; await toggleScheduleComplete(s.id, id, !s.completed); }}>
-                      <button type="submit"
-                        className={`text-xs px-2 py-0.5 rounded-full font-medium ${s.completed ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"}`}>
-                        {s.completed ? "Done" : "Pending"}
+                      <button type="submit" className={`text-xs px-2 py-0.5 rounded-full font-medium ${s.completed ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"}`}>
+                        {s.completed ? st.done : st.pending}
                       </button>
                     </form>
                   </td>
                   <td className="px-3 py-2 text-right">
                     <form action={async () => { "use server"; await deleteSchedule(s.id, id); }}>
-                      <button type="submit" className="text-xs text-red-500 hover:underline">Delete</button>
+                      <button type="submit" className="text-xs text-red-500 hover:underline">{dict.common.delete}</button>
                     </form>
                   </td>
                 </tr>

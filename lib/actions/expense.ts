@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { ExpenseCategory } from "@/app/generated/prisma/enums";
+import { getLocale } from "@/lib/get-locale";
+import { getDictionary } from "@/locales";
 
 export type ActionState = { error?: string };
 
@@ -11,6 +13,9 @@ export async function addExpense(
   _prev: ActionState,
   formData: FormData
 ): Promise<ActionState> {
+  const locale = await getLocale();
+  const t = getDictionary(locale).expenseForm;
+
   const date = formData.get("date") as string;
   const category = formData.get("category") as ExpenseCategory;
   const description = formData.get("description") as string;
@@ -18,7 +23,7 @@ export async function addExpense(
   const notes = (formData.get("notes") as string) || undefined;
 
   if (!date || !category || !description || !amount) {
-    return { error: "All required fields must be filled." };
+    return { error: t.errorRequired };
   }
 
   await prisma.expense.create({

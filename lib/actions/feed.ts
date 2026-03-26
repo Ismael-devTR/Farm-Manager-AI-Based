@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { getLocale } from "@/lib/get-locale";
+import { getDictionary } from "@/locales";
 
 export type ActionState = { error?: string };
 
@@ -10,6 +12,9 @@ export async function addFeedRecord(
   _prev: ActionState,
   formData: FormData
 ): Promise<ActionState> {
+  const locale = await getLocale();
+  const t = getDictionary(locale).feedForm;
+
   const date = formData.get("date") as string;
   const feedType = formData.get("feedType") as string;
   const quantityKg = Number(formData.get("quantityKg"));
@@ -17,7 +22,7 @@ export async function addFeedRecord(
   const notes = (formData.get("notes") as string) || undefined;
 
   if (!date || !feedType || !quantityKg || !costPerKg) {
-    return { error: "All required fields must be filled." };
+    return { error: t.errorRequired };
   }
 
   await prisma.feedRecord.create({
