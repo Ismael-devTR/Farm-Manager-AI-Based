@@ -11,6 +11,7 @@ import FeedForm from "@/components/FeedForm";
 import ExpenseForm from "@/components/ExpenseForm";
 import ScheduleForm from "@/components/ScheduleForm";
 import SalePriceSimulator from "@/components/SalePriceSimulator";
+import FeedProjectionWidget from "@/components/FeedProjectionWidget";
 import WeightChart from "@/components/charts/WeightChart";
 import FeedChart from "@/components/charts/FeedChart";
 import CostBreakdownChart from "@/components/charts/CostBreakdownChart";
@@ -110,6 +111,18 @@ export default async function BatchDetailPage({ params }: Props) {
           <CostBreakdownChart animalCost={metrics.animalCost} feedCost={metrics.totalFeedCost} expenseCost={metrics.totalExpenseCost} />
         </Section>
       </div>
+
+      {/* Feed projection */}
+      <Section title={t.feedProjectionSection}>
+        <FeedProjectionWidget
+          feedRecords={batch.feedRecords}
+          entryDate={batch.entryDate}
+          animalCount={batch.animalCount}
+          initialWeightPerAnimal={batch.initialWeight}
+          avgCurrentWeight={metrics.avgCurrentWeight}
+          fcr={metrics.fcr}
+        />
+      </Section>
 
       {/* Sale simulator */}
       <Section title={t.simulatorSection}>

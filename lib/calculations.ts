@@ -2,10 +2,75 @@ export type BatchInputs = {
   animalCount: number;
   initialWeightPerAnimal: number; // kg
   costPerAnimal: number;
-  feedRecords: { quantityKg: number; costPerKg: number }[];
+  feedRecords: { quantityKg: number; costPerKg: number; date: Date }[];
   expenses: { amount: number }[];
   weightRecords: { totalWeight: number; animalCount: number; weekNumber: number }[];
 };
+
+export type FeedProjectionInputs = {
+  feedRecords: { quantityKg: number; costPerKg: number; date: Date }[];
+  entryDate: Date;
+  animalCount: number;
+  initialWeightPerAnimal: number;
+  avgCurrentWeight: number | null;
+  fcr: number | null;
+  targetAvgWeight: number; // kg per animal — user-supplied
+};
+
+export type FeedProjection = {
+  avgDailyKg: number | null;          // kg/day based on elapsed time
+  projectedTotalFeedKg: number | null; // total feed to reach target
+  remainingFeedKg: number | null;      // still to consume
+  daysRemaining: number | null;
+  estimatedFinishDate: Date | null;
+  avgCostPerKg: number | null;
+  projectedRemainingCost: number | null;
+};
+
+export function computeFeedProjection(p: FeedProjectionInputs): FeedProjection {
+  const totalFeedKg = p.feedRecords.reduce((s, r) => s + r.quantityKg, 0);
+  const totalFeedCost = p.feedRecords.reduce((s, r) => s + r.quantityKg * r.costPerKg, 0);
+
+  const avgCostPerKg = totalFeedKg > 0 ? totalFeedCost / totalFeedKg : null;
+
+  // Daily consumption rate: total kg divided by days since entry
+  const now = new Date();
+  const msPerDay = 1000 * 60 * 60 * 24;
+  const elapsedDays = Math.max(1, (now.getTime() - p.entryDate.getTime()) / msPerDay);
+  const avgDailyKg = totalFeedKg > 0 ? totalFeedKg / elapsedDays : null;
+
+  // Use current FCR if available, otherwise fall back to 2.7 (typical for pigs)
+  const effectiveFcr = p.fcr ?? 2.7;
+
+  const currentAvgWeight = p.avgCurrentWeight ?? p.initialWeightPerAnimal;
+  const targetGainPerAnimal = Math.max(0, p.targetAvgWeight - p.initialWeightPerAnimal);
+  const currentGainPerAnimal = Math.max(0, currentAvgWeight - p.initialWeightPerAnimal);
+  const remainingGainPerAnimal = Math.max(0, targetGainPerAnimal - currentGainPerAnimal);
+
+  const projectedTotalFeedKg = targetGainPerAnimal * p.animalCount * effectiveFcr;
+  const remainingFeedKg = remainingGainPerAnimal * p.animalCount * effectiveFcr;
+
+  const daysRemaining =
+    avgDailyKg && avgDailyKg > 0 ? remainingFeedKg / avgDailyKg : null;
+
+  const estimatedFinishDate =
+    daysRemaining != null
+      ? new Date(now.getTime() + daysRemaining * msPerDay)
+      : null;
+
+  const projectedRemainingCost =
+    avgCostPerKg != null ? remainingFeedKg * avgCostPerKg : null;
+
+  return {
+    avgDailyKg,
+    projectedTotalFeedKg,
+    remainingFeedKg,
+    daysRemaining,
+    estimatedFinishDate,
+    avgCostPerKg,
+    projectedRemainingCost,
+  };
+}
 
 export type BatchMetrics = {
   // Costs
