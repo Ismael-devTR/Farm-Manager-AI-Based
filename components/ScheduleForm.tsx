@@ -14,7 +14,7 @@ export default function ScheduleForm({ batchId }: { batchId: string }) {
   const cls = "w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500";
 
   return (
-    <form action={formAction} className="grid grid-cols-2 gap-3">
+    <form action={formAction} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
       <div>
         <label className="block text-xs font-medium text-gray-600 mb-1">{t.date} *</label>
         <input name="scheduledDate" type="date" required defaultValue={today} className={cls} />

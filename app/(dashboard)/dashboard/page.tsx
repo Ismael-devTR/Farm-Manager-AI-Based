@@ -33,7 +33,7 @@ export default async function DashboardPage() {
         </Link>
       </div>
 
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <SummaryCard label={t.activeBatches} value={String(batches.length)} />
         <SummaryCard label={t.soldBatches} value={String(soldBatches)} />
         <SummaryCard label={t.totalBatches} value={String(allBatches)} />
@@ -76,7 +76,7 @@ export default async function DashboardPage() {
                       </span>
                     )}
                   </div>
-                  <div className="grid grid-cols-4 gap-3 mt-4">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
                     <Metric label={t.totalCost} value={`$${metrics.totalCost.toFixed(2)}`} />
                     <Metric label={t.costPerAnimal} value={`$${metrics.costPerAnimal.toFixed(2)}`} />
                     <Metric label={t.fcr} value={metrics.fcr != null ? metrics.fcr.toFixed(2) : "—"} />

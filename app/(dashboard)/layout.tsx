@@ -3,7 +3,7 @@ import { getSession } from "@/lib/session";
 import { getLocale } from "@/lib/get-locale";
 import { getDictionary } from "@/locales";
 import { LocaleProvider } from "@/components/LocaleProvider";
-import Sidebar from "@/components/Sidebar";
+import ResponsiveLayout from "@/components/ResponsiveLayout";
 
 export default async function DashboardLayout({
   children,
@@ -18,10 +18,9 @@ export default async function DashboardLayout({
 
   return (
     <LocaleProvider dict={dict}>
-      <div className="flex min-h-screen">
-        <Sidebar userName={session.name} locale={locale} dict={dict} />
-        <main className="flex-1 bg-gray-50 p-8 overflow-auto">{children}</main>
-      </div>
+      <ResponsiveLayout userName={session.name} locale={locale} dict={dict}>
+        {children}
+      </ResponsiveLayout>
     </LocaleProvider>
   );
 }

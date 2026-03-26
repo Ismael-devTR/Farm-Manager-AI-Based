@@ -21,7 +21,7 @@ export default function ExpenseForm({ batchId }: { batchId: string }) {
   ];
 
   return (
-    <form action={formAction} className="grid grid-cols-2 gap-3">
+    <form action={formAction} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
       <div>
         <label className="block text-xs font-medium text-gray-600 mb-1">{t.date} *</label>
         <input name="date" type="date" required defaultValue={today} className={cls} />

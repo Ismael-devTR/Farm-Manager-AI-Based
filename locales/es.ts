@@ -58,7 +58,7 @@ export const es: Dictionary = {
     noBatches: "Sin lotes aún. Crea el primero.",
     animalsSuffix: "animales",
     oldAtEntry: "de edad al ingreso",
-    markAsSold: "Marcar como vendido",
+    markAsSold: "Vendido",
     // stat cards
     totalCost: "Costo total",
     costPerAnimal: "Costo / animal",

@@ -54,7 +54,7 @@ export default async function BatchDetailPage({ params }: Props) {
   });
 
   return (
-    <div className="space-y-8 max-w-4xl">
+    <div className="space-y-6 md:space-y-8 w-full max-w-4xl">
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
@@ -81,7 +81,7 @@ export default async function BatchDetailPage({ params }: Props) {
       </div>
 
       {/* Cost summary */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard label={t.totalCost} value={`$${metrics.totalCost.toFixed(2)}`} />
         <StatCard label={t.costPerAnimal} value={`$${metrics.costPerAnimal.toFixed(2)}`} />
         <StatCard label={t.costPerKgProduced} value={metrics.costPerKgProduced != null ? `$${metrics.costPerKgProduced.toFixed(2)}` : "—"} />
@@ -89,7 +89,7 @@ export default async function BatchDetailPage({ params }: Props) {
       </div>
 
       {/* Weight summary */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard label={t.initialTotalWeight} value={`${metrics.initialTotalWeight.toFixed(0)} kg`} />
         <StatCard label={t.currentTotalWeight} value={metrics.currentTotalWeight != null ? `${metrics.currentTotalWeight.toFixed(0)} kg` : "—"} />
         <StatCard label={t.totalWeightGain} value={metrics.totalWeightGain != null ? `${metrics.totalWeightGain.toFixed(0)} kg` : "—"} />
@@ -97,7 +97,7 @@ export default async function BatchDetailPage({ params }: Props) {
       </div>
 
       {/* Charts */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Section title={t.chartsWeight}><WeightChart records={batch.weightRecords} /></Section>
         <Section title={t.chartsFeed}><FeedChart records={batch.feedRecords} /></Section>
         <Section title={t.chartsAccCost}>
@@ -117,7 +117,7 @@ export default async function BatchDetailPage({ params }: Props) {
       <Section title={t.weeklyWeights}>
         <WeightForm batchId={id} />
         {batch.weightRecords.length > 0 && (
-          <table className="w-full text-sm mt-4">
+          <div className="overflow-x-auto mt-4"><table className="w-full text-sm">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
                 <th className="text-left px-3 py-2 font-medium text-gray-600">{wt.weekCol}</th>
@@ -144,7 +144,7 @@ export default async function BatchDetailPage({ params }: Props) {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         )}
       </Section>
 
@@ -152,7 +152,7 @@ export default async function BatchDetailPage({ params }: Props) {
       <Section title={`${t.feedConsumption} — ${metrics.totalFeedKg.toFixed(0)} kg ${t.totalSuffix} · $${metrics.totalFeedCost.toFixed(2)}`}>
         <FeedForm batchId={id} />
         {batch.feedRecords.length > 0 && (
-          <table className="w-full text-sm mt-4">
+          <div className="overflow-x-auto mt-4"><table className="w-full text-sm">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
                 <th className="text-left px-3 py-2 font-medium text-gray-600">{ft.dateCol}</th>
@@ -179,7 +179,7 @@ export default async function BatchDetailPage({ params }: Props) {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         )}
       </Section>
 
@@ -187,7 +187,7 @@ export default async function BatchDetailPage({ params }: Props) {
       <Section title={`${t.expensesSection} — $${metrics.totalExpenseCost.toFixed(2)} ${t.totalSuffix}`}>
         <ExpenseForm batchId={id} />
         {batch.expenses.length > 0 && (
-          <table className="w-full text-sm mt-4">
+          <div className="overflow-x-auto mt-4"><table className="w-full text-sm">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
                 <th className="text-left px-3 py-2 font-medium text-gray-600">{et.dateCol}</th>
@@ -212,7 +212,7 @@ export default async function BatchDetailPage({ params }: Props) {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         )}
       </Section>
 
@@ -220,7 +220,7 @@ export default async function BatchDetailPage({ params }: Props) {
       <Section title={t.scheduleSection}>
         <ScheduleForm batchId={id} />
         {batch.vaccinationSchedules.length > 0 && (
-          <table className="w-full text-sm mt-4">
+          <div className="overflow-x-auto mt-4"><table className="w-full text-sm">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
                 <th className="text-left px-3 py-2 font-medium text-gray-600">{st.dateCol}</th>
@@ -251,7 +251,7 @@ export default async function BatchDetailPage({ params }: Props) {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         )}
       </Section>
     </div>
