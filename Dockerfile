@@ -36,6 +36,8 @@ COPY --from=builder /app/public ./public
 # Copy prisma schema, migrations, seed script, and config
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
+# Copy generated prisma client (needed by seed script)
+COPY --from=deps /app/app/generated ./app/generated
 # Copy full node_modules for prisma CLI, tsx, and seed dependencies
 COPY --from=deps /app/node_modules ./node_modules
 
