@@ -6,10 +6,74 @@ export interface SearchResult {
 
 const SEARCH_TIMEOUT_MS = 5000;
 const MAX_RESULTS = 5;
+const RATE_LIMIT_MS = 10_000;
+
+// ── Rate limiting (in-memory, per-user) ─────────────────────────────
+
+const searchTimestamps = new Map<string, number>();
+
+/**
+ * Returns true if the user has searched within the last RATE_LIMIT_MS.
+ * Automatically records the timestamp when not rate-limited.
+ */
+export function isSearchRateLimited(userId: string): boolean {
+  const now = Date.now();
+  const last = searchTimestamps.get(userId);
+  if (last && now - last < RATE_LIMIT_MS) {
+    return true;
+  }
+  searchTimestamps.set(userId, now);
+  return false;
+}
+
+// ── Query classification ────────────────────────────────────────────
+
+/** Patterns that indicate a farm-data-only question (no web search needed). */
+const FARM_ONLY_PATTERNS = [
+  /\b(mi|mis|my|our|the)\s+(lote|batch|cerdo|pig|animal|granja|farm)/i,
+  /\b(lote|batch)\s*[-#]?\s*[\w-]+/i,
+  /\b(cuánto|cuánta|cuántos|cuántas|how\s+much|how\s+many)\b/i,
+  /\b(fcr|feed\s*conversion|conversión\s*alimenticia)/i,
+  /\b(schedule|programa|vacuna|desparasit)/i,
+  /\b(expense|gasto|costo\s+total|total\s+cost)\b/i,
+  /\b(peso\s+promedio|average\s+weight|weight\s+gain)\b/i,
+  /\b(mejor\s+lote|best\s+batch|worst\s+batch|peor\s+lote)\b/i,
+];
+
+/**
+ * Returns true if the message likely needs web results.
+ * Farm-only questions are skipped to avoid unnecessary external requests.
+ */
+export function shouldSearch(message: string): boolean {
+  return !FARM_ONLY_PATTERNS.some((p) => p.test(message));
+}
+
+// ── Query sanitization ──────────────────────────────────────────────
+
+/** Patterns to strip from the query before sending to DuckDuckGo. */
+const SANITIZE_PATTERNS = [
+  /\b(lote|batch)\s*[-#]?\s*[\w-]+/gi,
+  /\$\s*[\d,.]+/g,
+  /\d+\s*(kg|lb|kilogram|pound|libra)s?/gi,
+];
+
+/**
+ * Strips farm-specific identifiers (batch names, amounts, weights)
+ * so they don't leak to the search engine.
+ */
+export function sanitizeQuery(message: string): string {
+  let q = message;
+  for (const pattern of SANITIZE_PATTERNS) {
+    q = q.replace(pattern, "");
+  }
+  return q.replace(/\s+/g, " ").trim();
+}
+
+// ── Web search ──────────────────────────────────────────────────────
 
 /**
  * Searches DuckDuckGo HTML lite and returns parsed results.
- * Only the user's query goes to the internet — no farm data is sent.
+ * Only the sanitized query goes to the internet — no farm data is sent.
  * Returns an empty array on any failure (non-blocking).
  */
 export async function webSearch(query: string): Promise<SearchResult[]> {
@@ -36,25 +100,31 @@ export async function webSearch(query: string): Promise<SearchResult[]> {
   }
 }
 
+// ── HTML parsing ────────────────────────────────────────────────────
+
 /**
  * Parses DuckDuckGo HTML lite response into structured results.
+ * Uses a two-pass approach: match the full <a> tag, then extract
+ * href separately — so attribute order doesn't matter.
  */
 function parseResults(html: string): SearchResult[] {
   const results: SearchResult[] = [];
 
-  // DuckDuckGo lite wraps each result in a <a class="result-link"> for the title/url
-  // and <td class="result-snippet"> for the snippet.
-  // Match result links: <a rel="nofollow" class="result__a" href="...">title</a>
-  const linkRegex = /<a[^>]+class="result__a"[^>]+href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi;
-  const snippetRegex = /<a[^>]+class="result__snippet"[^>]*>([\s\S]*?)<\/a>/gi;
+  // Match full <a> tags that contain class="result__a" (any attribute order)
+  const linkTagRegex = /<a\s[^>]*class="result__a"[^>]*>[\s\S]*?<\/a>/gi;
+  const snippetTagRegex = /<a\s[^>]*class="result__snippet"[^>]*>[\s\S]*?<\/a>/gi;
+  const hrefRegex = /href="([^"]*)"/i;
 
   const links: { url: string; title: string }[] = [];
-  let match;
+  let tagMatch;
 
-  while ((match = linkRegex.exec(html)) !== null) {
-    const rawUrl = match[1];
-    const title = stripHtml(match[2]).trim();
-    // DuckDuckGo lite URLs are sometimes redirected through uddg param
+  while ((tagMatch = linkTagRegex.exec(html)) !== null) {
+    const fullTag = tagMatch[0];
+    const hrefMatch = hrefRegex.exec(fullTag);
+    const rawUrl = hrefMatch?.[1] ?? "";
+    // Extract inner text (everything between > and </a>)
+    const innerMatch = fullTag.match(/>([^]*?)<\/a>/i);
+    const title = stripHtml(innerMatch?.[1] ?? "").trim();
     const resolved = resolveUrl(rawUrl);
     if (title && resolved) {
       links.push({ url: resolved, title });
@@ -62,8 +132,9 @@ function parseResults(html: string): SearchResult[] {
   }
 
   const snippets: string[] = [];
-  while ((match = snippetRegex.exec(html)) !== null) {
-    snippets.push(stripHtml(match[1]).trim());
+  while ((tagMatch = snippetTagRegex.exec(html)) !== null) {
+    const innerMatch = tagMatch[0].match(/>([^]*?)<\/a>/i);
+    snippets.push(stripHtml(innerMatch?.[1] ?? "").trim());
   }
 
   for (let i = 0; i < Math.min(links.length, MAX_RESULTS); i++) {
@@ -82,13 +153,11 @@ function parseResults(html: string): SearchResult[] {
  */
 function resolveUrl(raw: string): string {
   try {
-    // DDG lite often uses: //duckduckgo.com/l/?uddg=<encoded_url>&...
     if (raw.includes("uddg=")) {
       const url = new URL(raw, "https://duckduckgo.com");
       const uddg = url.searchParams.get("uddg");
       return uddg ?? raw;
     }
-    // Already a direct URL
     if (raw.startsWith("http")) {
       return raw;
     }
@@ -122,7 +191,7 @@ export function formatSearchResults(results: SearchResult[]): string {
     return "";
   }
 
-  const lines = ["--- WEB SEARCH RESULTS ---"];
+  const lines = ["\n--- WEB SEARCH RESULTS ---"];
   for (const r of results) {
     lines.push(`Title: ${r.title}`);
     if (r.snippet) {
@@ -132,5 +201,5 @@ export function formatSearchResults(results: SearchResult[]): string {
     lines.push("");
   }
 
-  return "\n" + lines.join("\n");
+  return lines.join("\n");
 }

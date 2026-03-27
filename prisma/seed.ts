@@ -3,21 +3,27 @@ import {PrismaPg} from '@prisma/adapter-pg';
 import {hash} from 'bcryptjs';
 import 'dotenv/config';
 
+function requireEnv(key: string): string {
+  const value = process.env[key];
+  if (value) return value;
+  throw new Error(`Missing required env var ${key}. Set it in .env or secrets file.`);
+}
+
 const SEED_USERS = [
   {
     name: 'Admin',
-    email: process.env.SEED_ADMIN_EMAIL ?? 'admin@farm.local',
-    password: process.env.SEED_ADMIN_PASSWORD ?? 'admin123',
+    email: requireEnv('FM_SEED_ADMIN_EMAIL'),
+    password: requireEnv('FM_SEED_ADMIN_PASSWORD'),
   },
   {
     name: 'Operator',
-    email: process.env.SEED_OPERATOR_EMAIL ?? 'operator@farm.local',
-    password: process.env.SEED_OPERATOR_PASSWORD ?? 'operator123',
+    email: requireEnv('FM_SEED_OPERATOR_EMAIL'),
+    password: requireEnv('FM_SEED_OPERATOR_PASSWORD'),
   },
 ];
 
 async function main() {
-  const adapter = new PrismaPg({connectionString: process.env.DATABASE_URL!});
+  const adapter = new PrismaPg({connectionString: process.env.FM_DATABASE_URL!});
   const prisma = new PrismaClient({adapter});
 
   try {

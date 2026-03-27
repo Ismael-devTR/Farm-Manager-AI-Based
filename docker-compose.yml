@@ -1,16 +1,45 @@
+env_file:
+  - .env
+  - ${HOME}/.secrets/farm-manager.env
+
 services:
   db:
-    image: postgres:16-alpine
-    container_name: farm_manager_db
+    image: ${FM_POSTGRES_IMAGE}
+    container_name: ${FM_DB_CONTAINER_NAME}
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${FM_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${FM_POSTGRES_PASSWORD}
+      POSTGRES_DB: ${FM_POSTGRES_DB}
     ports:
-      - "5432:5432"
+      - "${FM_DB_PORT}:5432"
     volumes:
       - farm_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${FM_POSTGRES_USER} -d ${FM_POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    container_name: ${FM_APP_CONTAINER_NAME}
+    restart: unless-stopped
+    ports:
+      - "${FM_APP_PORT}:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      FM_DATABASE_URL: ${FM_DATABASE_URL}
+      FM_SESSION_SECRET: ${FM_SESSION_SECRET}
+      FM_OLLAMA_BASE_URL: ${FM_OLLAMA_BASE_URL}
+      FM_OLLAMA_MODEL: ${FM_OLLAMA_MODEL}
+      FM_SEED_ADMIN_EMAIL: ${FM_SEED_ADMIN_EMAIL}
+      FM_SEED_ADMIN_PASSWORD: ${FM_SEED_ADMIN_PASSWORD}
+      FM_SEED_OPERATOR_EMAIL: ${FM_SEED_OPERATOR_EMAIL}
+      FM_SEED_OPERATOR_PASSWORD: ${FM_SEED_OPERATOR_PASSWORD}
+      NODE_ENV: ${FM_NODE_ENV}
 
 volumes:
   farm_db_data:

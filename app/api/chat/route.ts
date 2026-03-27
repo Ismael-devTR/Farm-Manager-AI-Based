@@ -4,7 +4,13 @@ import { prisma } from "@/lib/prisma";
 import { streamChat, OllamaError } from "@/lib/ollama";
 import type { OllamaMessage } from "@/lib/ollama";
 import { buildFarmContext, SYSTEM_PROMPT } from "@/lib/chat-context";
-import { webSearch, formatSearchResults } from "@/lib/web-search";
+import {
+  webSearch,
+  formatSearchResults,
+  shouldSearch,
+  sanitizeQuery,
+  isSearchRateLimited,
+} from "@/lib/web-search";
 
 export async function POST(request: NextRequest) {
   const session = await getSession();
@@ -36,10 +42,14 @@ export async function POST(request: NextRequest) {
     });
     history.reverse();
 
-    // Build farm data context and web search results in parallel
+    // Build farm data context; only run web search when relevant and not rate-limited
+    const runSearch =
+      shouldSearch(userMessage) && !isSearchRateLimited(session.userId);
+    const searchQuery = runSearch ? sanitizeQuery(userMessage) : "";
+
     const [farmContext, searchResults] = await Promise.all([
       buildFarmContext(),
-      webSearch(userMessage),
+      searchQuery ? webSearch(searchQuery) : Promise.resolve([]),
     ]);
     const webContext = formatSearchResults(searchResults);
 

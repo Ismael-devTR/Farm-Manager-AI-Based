@@ -2,7 +2,7 @@ import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 
 const COOKIE_NAME = "session";
-const secret = new TextEncoder().encode(process.env.SESSION_SECRET);
+const secret = new TextEncoder().encode(process.env.FM_SESSION_SECRET);
 
 export type SessionPayload = {
   userId: string;

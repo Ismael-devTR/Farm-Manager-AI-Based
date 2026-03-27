@@ -22,8 +22,8 @@ export async function streamChat(
   messages: OllamaMessage[],
   signal?: AbortSignal,
 ): Promise<ReadableStream<string>> {
-  const baseUrl = process.env.OLLAMA_BASE_URL ?? "http://localhost:11434";
-  const model = process.env.OLLAMA_MODEL ?? "gemma3:4b";
+  const baseUrl = process.env.FM_OLLAMA_BASE_URL ?? "http://localhost:11434";
+  const model = process.env.FM_OLLAMA_MODEL ?? "gemma3:4b";
 
   let response: Response;
   try {
