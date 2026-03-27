@@ -33,8 +33,9 @@ COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 # Copy public assets
 COPY --from=builder /app/public ./public
-# Copy prisma schema, migrations, and seed script
+# Copy prisma schema, migrations, seed script, and config
 COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
 # Copy full node_modules for prisma CLI, tsx, and seed dependencies
 COPY --from=deps /app/node_modules ./node_modules
 
