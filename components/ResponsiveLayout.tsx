@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Sidebar from "@/components/Sidebar";
+import ChatPanel from "@/components/ChatPanel";
 import type { Dictionary, Locale } from "@/locales";
 
 type Props = {
@@ -13,12 +14,18 @@ type Props = {
 
 export default function ResponsiveLayout({ children, userName, locale, dict }: Props) {
   const [open, setOpen] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
 
   return (
     <div className="flex min-h-screen">
       {/* Desktop sidebar — fixed, full height */}
       <div className="hidden md:block shrink-0 sticky top-0 h-screen overflow-y-auto">
-        <Sidebar userName={userName} locale={locale} dict={dict} />
+        <Sidebar
+          userName={userName}
+          locale={locale}
+          dict={dict}
+          onChatToggle={() => setChatOpen((v) => !v)}
+        />
       </div>
 
       {/* Mobile drawer */}
@@ -34,6 +41,10 @@ export default function ResponsiveLayout({ children, userName, locale, dict }: P
               locale={locale}
               dict={dict}
               onClose={() => setOpen(false)}
+              onChatToggle={() => {
+                setOpen(false);
+                setChatOpen((v) => !v);
+              }}
             />
           </div>
         </div>
@@ -60,6 +71,35 @@ export default function ResponsiveLayout({ children, userName, locale, dict }: P
           {children}
         </main>
       </div>
+
+      {/* Floating chat button */}
+      {!chatOpen && (
+        <button
+          onClick={() => setChatOpen(true)}
+          className="fixed bottom-5 right-5 z-40 flex items-center justify-center w-14 h-14 rounded-full bg-green-700 text-white shadow-lg hover:bg-green-800 transition-colors"
+          aria-label={dict.chat.title}
+        >
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+          </svg>
+        </button>
+      )}
+
+      {/* Chat panel */}
+      <ChatPanel
+        isOpen={chatOpen}
+        onClose={() => setChatOpen(false)}
+        dict={dict}
+      />
     </div>
   );
 }

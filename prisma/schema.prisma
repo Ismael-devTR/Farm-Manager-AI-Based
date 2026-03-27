@@ -109,3 +109,13 @@ enum ScheduleType {
   VACCINE
   DEWORMER
 }
+
+model ChatMessage {
+  id        String   @id @default(cuid())
+  userId    String
+  role      String   // "user" | "assistant"
+  content   String
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+}

@@ -11,9 +11,10 @@ type Props = {
   locale: Locale;
   dict: Dictionary;
   onClose?: () => void;
+  onChatToggle?: () => void;
 };
 
-export default function Sidebar({ userName, locale, dict, onClose }: Props) {
+export default function Sidebar({ userName, locale, dict, onClose, onChatToggle }: Props) {
   const pathname = usePathname();
 
   const navItems = [
@@ -55,6 +56,26 @@ export default function Sidebar({ userName, locale, dict, onClose }: Props) {
             </Link>
           );
         })}
+        {onChatToggle && (
+          <button
+            onClick={onChatToggle}
+            className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm font-medium text-green-200 hover:bg-green-800 hover:text-white transition-colors"
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+            </svg>
+            {dict.nav.chat}
+          </button>
+        )}
       </nav>
 
       <div className="px-3 py-4 border-t border-green-800 space-y-1">

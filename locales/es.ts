@@ -23,6 +23,7 @@ export const es: Dictionary = {
   nav: {
     dashboard: "Panel",
     batches: "Lotes",
+    chat: "Chat",
     signOut: "Cerrar sesión",
   },
   auth: {
@@ -195,6 +196,17 @@ export const es: Dictionary = {
     chartProjected: "Proyectado",
     chartToday: "Hoy",
     chartTarget: "Objetivo",
+  },
+  chat: {
+    title: "Asistente de Granja",
+    inputPlaceholder: "Pregunta sobre tus datos de granja...",
+    send: "Enviar",
+    sending: "Enviando...",
+    errorUnavailable: "El asistente de IA no está disponible. Asegúrate de que Ollama esté ejecutándose.",
+    errorGeneric: "Algo salió mal. Inténtalo de nuevo.",
+    welcome: "¡Hola! Soy tu asistente de granja. Pregúntame sobre tus lotes, alimento, costos o programaciones.",
+    retry: "Reintentar",
+    typing: "Escribiendo...",
   },
   simulator: {
     meatPrice: "Precio de carne ($/kg)",

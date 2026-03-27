@@ -21,6 +21,7 @@ export const en = {
   nav: {
     dashboard: "Dashboard",
     batches: "Batches",
+    chat: "Chat",
     signOut: "Sign out",
   },
   auth: {
@@ -193,6 +194,17 @@ export const en = {
     chartProjected: "Projected",
     chartToday: "Today",
     chartTarget: "Target",
+  },
+  chat: {
+    title: "Farm Assistant",
+    inputPlaceholder: "Ask about your farm data...",
+    send: "Send",
+    sending: "Sending...",
+    errorUnavailable: "The AI assistant is currently unavailable. Make sure Ollama is running.",
+    errorGeneric: "Something went wrong. Please try again.",
+    welcome: "Hi! I'm your farm assistant. Ask me anything about your batches, feed, costs, or schedules.",
+    retry: "Try again",
+    typing: "Typing...",
   },
   simulator: {
     meatPrice: "Meat price ($/kg)",
