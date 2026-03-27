@@ -31,6 +31,8 @@ RUN adduser --system --uid 1001 nextjs
 COPY --from=builder /app/.next/standalone ./
 # Copy static assets
 COPY --from=builder /app/.next/static ./.next/static
+# Fix ownership so nextjs user can write to the prerender cache
+RUN chown -R nextjs:nodejs .next
 # Copy public assets
 COPY --from=builder /app/public ./public
 # Copy prisma schema, migrations, seed script, and config
