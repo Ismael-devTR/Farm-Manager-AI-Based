@@ -15,6 +15,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Farm Manager",
   description: "Pig fattening farm management — cost tracking, production efficiency, and financial analysis",
+  icons: {
+    icon: "/sprout.svg",
+  },
 };
 
 export default function RootLayout({
