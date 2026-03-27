@@ -102,3 +102,48 @@ Generate:
 - API routes
 - folder structure
 - main dashboard components
+
+## AI Agent Integration
+
+The platform includes an embedded AI chat assistant for farm operators. It is **text-only and read-only** — it can query farm data but never modify it.
+
+### Infrastructure
+- **App host:** Raspberry Pi 5 — runs the Next.js app + PostgreSQL.
+- **LLM host:** Separate Windows machine on the local network running **Ollama** with locally installed models.
+- **Communication:** The Next.js backend calls the Ollama HTTP API (`http://<windows-ip>:11434`) over the local network. No data leaves the LAN.
+- **Privacy:** All farm data stays on-premise. Queries are sent to the local Ollama instance, never to external cloud APIs.
+
+### Security constraints
+- **Read-only access** — the agent can only query the database (SELECT). No inserts, updates, or deletes.
+- **No file access** — the agent cannot read, write, or modify any files on either machine.
+- **No system commands** — no shell execution, no process spawning.
+- **Text-only interface** — plain chat input/output, no file uploads or tool-calling that mutates state.
+- **Scoped DB queries** — the backend builds parameterized read-only queries; the LLM never sees raw SQL or connection strings.
+
+### Core capabilities
+1. **Natural-language Q&A** — users ask questions about their farm data in plain language (e.g., "Which batch has the best feed conversion this month?") and get answers derived from real database records.
+2. **Proactive insights** — the agent analyzes current metrics and surfaces observations:
+   - Feed conversion trends
+   - Upcoming vaccination/deworming schedules
+   - Batches approaching target selling weight
+   - Cost anomalies (sudden spikes in feed or expenses)
+3. **Sale simulation** — conversational what-if scenarios on sale price, carcass yield, and selling weight.
+4. **Report summaries** — on-demand natural-language summaries of batch performance, weekly progress, and financial status.
+
+### Technical direction
+- **Ollama API** — call `/api/chat` or `/api/generate` from the Next.js API route. Env var `OLLAMA_BASE_URL` points to the Windows machine.
+- **No agent framework** — keep it simple. The backend fetches farm data via Prisma (read-only queries), injects it as context into the prompt, and streams the Ollama response to the client.
+- **Conversation history** — store chat messages in a `ChatMessage` table (userId, role, content, timestamp) for context continuity.
+- **Raspberry Pi considerations** — the Pi only proxies requests to Ollama; all heavy inference runs on the Windows machine. Keep payloads small and stream responses to avoid memory pressure on the Pi.
+
+### Env vars
+```
+OLLAMA_BASE_URL="http://<windows-machine-ip>:11434"
+OLLAMA_MODEL="llama3"  # or whichever model is installed
+```
+
+### Open questions
+- Which Ollama model(s) to use? (depends on Windows machine RAM/GPU)
+- Max conversation context length before truncation?
+- Should chat history persist across sessions or reset on logout?
+- Rate limiting per user to avoid overloading the Ollama host?
