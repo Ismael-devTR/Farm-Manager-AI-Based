@@ -1,0 +1,22 @@
+# Dev-only: runs just the database. Next.js runs natively via `npm run dev`.
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: farm_manager_db_dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: farm_dev
+      POSTGRES_PASSWORD: farm_dev_pass
+      POSTGRES_DB: farm_manager_dev
+    ports:
+      - "5433:5432"
+    volumes:
+      - farm_db_data_dev:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U farm_dev -d farm_manager_dev"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  farm_db_data_dev:

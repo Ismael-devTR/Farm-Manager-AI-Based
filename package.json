@@ -4,6 +4,11 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:all": "docker compose -f docker-compose.dev.yml up -d && npx prisma migrate deploy && tsx prisma/seed.ts && next dev",
+    "dev:db": "docker compose -f docker-compose.dev.yml up -d",
+    "dev:db:stop": "docker compose -f docker-compose.dev.yml down",
+    "dev:setup": "npx prisma migrate deploy && tsx prisma/seed.ts",
+    "dev:reset": "npx prisma migrate reset",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",

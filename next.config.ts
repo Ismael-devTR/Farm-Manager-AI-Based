@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
-const basePath = "/farm";
+const isProd = process.env.FM_NODE_ENV === "production";
+const basePath = isProd ? "/farm" : "";
 
 const nextConfig: NextConfig = {
   output: "standalone",

@@ -1,7 +1,13 @@
 import {PrismaClient} from '../app/generated/prisma/client';
 import {PrismaPg} from '@prisma/adapter-pg';
 import {hash} from 'bcryptjs';
-import 'dotenv/config';
+import dotenv from 'dotenv';
+import {existsSync} from 'fs';
+
+dotenv.config();
+if (existsSync('.env.development')) {
+  dotenv.config({path: '.env.development', override: true});
+}
 
 function requireEnv(key: string): string {
   const value = process.env[key];
