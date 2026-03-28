@@ -1,15 +1,38 @@
 "use client";
 
-import { useActionState } from "react";
-import { addExpense } from "@/lib/actions/expense";
+import { useActionState, useEffect } from "react";
+import { addExpense, updateExpense } from "@/lib/actions/expense";
 import { useDict } from "@/components/LocaleProvider";
+import { useEditModalClose } from "@/components/EditButton";
 
-export default function ExpenseForm({ batchId }: { batchId: string }) {
+export type ExpenseEditData = {
+  id: string;
+  date: string;
+  category: string;
+  description: string;
+  amount: number;
+  notes?: string | null;
+};
+
+type Props = {
+  batchId: string;
+  editData?: ExpenseEditData;
+};
+
+export default function ExpenseForm({ batchId, editData }: Props) {
   const dict = useDict();
   const t = dict.expenseForm;
-  const action = addExpense.bind(null, batchId);
+  const closeModal = useEditModalClose();
+
+  const action = editData
+    ? updateExpense.bind(null, editData.id, batchId)
+    : addExpense.bind(null, batchId);
   const [state, formAction, pending] = useActionState(action, {});
   const today = new Date().toISOString().split("T")[0];
+
+  useEffect(() => {
+    if (state?.success && closeModal) closeModal();
+  }, [state?.success, closeModal]);
 
   const cls = "w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500";
 
@@ -24,30 +47,30 @@ export default function ExpenseForm({ batchId }: { batchId: string }) {
     <form action={formAction} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
       <div>
         <label className="block text-xs font-medium text-gray-600 mb-1">{t.date} *</label>
-        <input name="date" type="date" required defaultValue={today} className={cls} />
+        <input name="date" type="date" required defaultValue={editData?.date ?? today} className={cls} />
       </div>
       <div>
         <label className="block text-xs font-medium text-gray-600 mb-1">{t.category} *</label>
-        <select name="category" required className={cls}>
+        <select name="category" required defaultValue={editData?.category} className={cls}>
           {categories.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
         </select>
       </div>
       <div className="col-span-2">
         <label className="block text-xs font-medium text-gray-600 mb-1">{t.description} *</label>
-        <input name="description" type="text" required placeholder={t.descriptionPlaceholder} className={cls} />
+        <input name="description" type="text" required defaultValue={editData?.description} placeholder={t.descriptionPlaceholder} className={cls} />
       </div>
       <div>
         <label className="block text-xs font-medium text-gray-600 mb-1">{t.amount} *</label>
-        <input name="amount" type="number" required step="0.01" min="0" placeholder={t.amountPlaceholder} className={cls} />
+        <input name="amount" type="number" required step="0.01" min="0" defaultValue={editData?.amount} placeholder={t.amountPlaceholder} className={cls} />
       </div>
       <div>
         <label className="block text-xs font-medium text-gray-600 mb-1">{dict.common.notes}</label>
-        <input name="notes" type="text" placeholder={dict.common.optional} className={cls} />
+        <input name="notes" type="text" defaultValue={editData?.notes ?? ""} placeholder={dict.common.optional} className={cls} />
       </div>
       {state?.error && <p className="col-span-2 text-xs text-red-600">{state.error}</p>}
       <button type="submit" disabled={pending}
         className="col-span-2 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white text-sm font-medium py-2 rounded-lg transition-colors">
-        {pending ? dict.common.saving : t.add}
+        {pending ? dict.common.saving : editData ? dict.common.save : t.add}
       </button>
     </form>
   );

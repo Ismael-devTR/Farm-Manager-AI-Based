@@ -6,7 +6,7 @@ import { ExpenseCategory } from "@/app/generated/prisma/enums";
 import { getLocale } from "@/lib/get-locale";
 import { getDictionary } from "@/locales";
 
-export type ActionState = { error?: string };
+export type ActionState = { error?: string; success?: boolean };
 
 export async function addExpense(
   batchId: string,
@@ -32,6 +32,34 @@ export async function addExpense(
 
   revalidatePath(`/batches/${batchId}`);
   return {};
+}
+
+export async function updateExpense(
+  id: string,
+  batchId: string,
+  _prev: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  const locale = await getLocale();
+  const t = getDictionary(locale).expenseForm;
+
+  const date = formData.get("date") as string;
+  const category = formData.get("category") as ExpenseCategory;
+  const description = formData.get("description") as string;
+  const amount = Number(formData.get("amount"));
+  const notes = (formData.get("notes") as string) || undefined;
+
+  if (!date || !category || !description || !amount) {
+    return { error: t.errorRequired };
+  }
+
+  await prisma.expense.update({
+    where: { id },
+    data: { date: new Date(`${date}T12:00:00`), category, description, amount, notes },
+  });
+
+  revalidatePath(`/batches/${batchId}`);
+  return { success: true };
 }
 
 export async function deleteExpense(id: string, batchId: string): Promise<void> {

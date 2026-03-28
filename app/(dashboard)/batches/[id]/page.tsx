@@ -21,6 +21,8 @@ import { BatchStatus } from "@/app/generated/prisma/enums";
 import { getLocale } from "@/lib/get-locale";
 import { getDictionary } from "@/locales";
 import ConfirmButton from "@/components/ConfirmButton";
+import EditButton from "@/components/EditButton";
+import EditBatchButton from "@/components/EditBatchButton";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -55,6 +57,8 @@ export default async function BatchDetailPage({ params }: Props) {
     weightRecords: batch.weightRecords,
   });
 
+  const fmtDate = (d: Date) => d.toISOString().split("T")[0];
+
   return (
     <div className="space-y-6 md:space-y-8 w-full max-w-4xl">
       {/* Header */}
@@ -67,6 +71,18 @@ export default async function BatchDetailPage({ params }: Props) {
           </p>
         </div>
         <div className="flex gap-2">
+          <EditBatchButton
+            data={{
+              id: batch.id,
+              name: batch.name,
+              entryDate: fmtDate(batch.entryDate),
+              animalCount: batch.animalCount,
+              birthWeeks: batch.birthWeeks,
+              initialWeight: batch.initialWeight,
+              costPerAnimal: batch.costPerAnimal,
+              notes: batch.notes,
+            }}
+          />
           {batch.status === "ACTIVE" && (
             <ConfirmButton
               action={async () => { "use server"; await updateBatchStatus(id, BatchStatus.SOLD); }}
@@ -152,7 +168,20 @@ export default async function BatchDetailPage({ params }: Props) {
                   <td className="px-3 py-2 text-right">{r.totalWeight}</td>
                   <td className="px-3 py-2 text-right">{r.animalCount}</td>
                   <td className="px-3 py-2 text-right">{(r.totalWeight / r.animalCount).toFixed(1)}</td>
-                  <td className="px-3 py-2 text-right">
+                  <td className="px-3 py-2 text-right space-x-2">
+                    <EditButton title={wt.weekCol + " " + r.weekNumber}>
+                      <WeightForm
+                        batchId={id}
+                        editData={{
+                          id: r.id,
+                          recordDate: fmtDate(r.recordDate),
+                          weekNumber: r.weekNumber,
+                          totalWeight: r.totalWeight,
+                          animalCount: r.animalCount,
+                          notes: r.notes,
+                        }}
+                      />
+                    </EditButton>
                     <ConfirmButton
                       action={async () => { "use server"; await deleteWeightRecord(r.id, id); }}
                       message={dict.confirms.deleteWeight}
@@ -190,7 +219,20 @@ export default async function BatchDetailPage({ params }: Props) {
                   <td className="px-3 py-2 text-right">{r.quantityKg}</td>
                   <td className="px-3 py-2 text-right">{r.costPerKg.toFixed(2)}</td>
                   <td className="px-3 py-2 text-right font-medium">${(r.quantityKg * r.costPerKg).toFixed(2)}</td>
-                  <td className="px-3 py-2 text-right">
+                  <td className="px-3 py-2 text-right space-x-2">
+                    <EditButton title={ft.typeCol + ": " + r.feedType}>
+                      <FeedForm
+                        batchId={id}
+                        editData={{
+                          id: r.id,
+                          date: fmtDate(r.date),
+                          feedType: r.feedType,
+                          quantityKg: r.quantityKg,
+                          costPerKg: r.costPerKg,
+                          notes: r.notes,
+                        }}
+                      />
+                    </EditButton>
                     <ConfirmButton
                       action={async () => { "use server"; await deleteFeedRecord(r.id, id); }}
                       message={dict.confirms.deleteFeed}
@@ -226,7 +268,20 @@ export default async function BatchDetailPage({ params }: Props) {
                   <td className="px-3 py-2"><span className="text-xs bg-gray-100 px-1.5 py-0.5 rounded">{e.category}</span></td>
                   <td className="px-3 py-2">{e.description}</td>
                   <td className="px-3 py-2 text-right font-medium">${e.amount.toFixed(2)}</td>
-                  <td className="px-3 py-2 text-right">
+                  <td className="px-3 py-2 text-right space-x-2">
+                    <EditButton title={et.descriptionCol + ": " + e.description}>
+                      <ExpenseForm
+                        batchId={id}
+                        editData={{
+                          id: e.id,
+                          date: fmtDate(e.date),
+                          category: e.category,
+                          description: e.description,
+                          amount: e.amount,
+                          notes: e.notes,
+                        }}
+                      />
+                    </EditButton>
                     <ConfirmButton
                       action={async () => { "use server"; await deleteExpense(e.id, id); }}
                       message={dict.confirms.deleteExpense}
@@ -268,7 +323,19 @@ export default async function BatchDetailPage({ params }: Props) {
                       </button>
                     </form>
                   </td>
-                  <td className="px-3 py-2 text-right">
+                  <td className="px-3 py-2 text-right space-x-2">
+                    <EditButton title={st.productCol + ": " + s.product}>
+                      <ScheduleForm
+                        batchId={id}
+                        editData={{
+                          id: s.id,
+                          scheduledDate: fmtDate(s.scheduledDate),
+                          type: s.type,
+                          product: s.product,
+                          notes: s.notes,
+                        }}
+                      />
+                    </EditButton>
                     <ConfirmButton
                       action={async () => { "use server"; await deleteSchedule(s.id, id); }}
                       message={dict.confirms.deleteSchedule}

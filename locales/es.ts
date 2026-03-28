@@ -4,6 +4,8 @@ export const es: Dictionary = {
   common: {
     notes: "Notas",
     optional: "Opcional",
+    edit: "Editar",
+    save: "Guardar",
     delete: "Eliminar",
     cancel: "Cancelar",
     back: "← Lotes",

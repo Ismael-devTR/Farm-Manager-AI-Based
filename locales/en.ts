@@ -2,6 +2,8 @@ export const en = {
   common: {
     notes: "Notes",
     optional: "Optional",
+    edit: "Edit",
+    save: "Save",
     delete: "Delete",
     cancel: "Cancel",
     back: "← Batches",
