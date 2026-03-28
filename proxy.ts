@@ -14,7 +14,7 @@ export async function proxy(request: NextRequest) {
   const session = token ? await decrypt(token) : null;
 
   if (!session) {
-    const loginUrl = new URL("/login", request.url);
+    const loginUrl = new URL(`${request.nextUrl.basePath}/login`, request.url);
     loginUrl.searchParams.set("callbackUrl", pathname);
     return NextResponse.redirect(loginUrl);
   }
