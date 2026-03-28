@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   title: "Farm Manager",
   description: "Pig fattening farm management — cost tracking, production efficiency, and financial analysis",
   icons: {
-    icon: `${process.env.FM_NODE_ENV === "production" ? "/farm" : ""}/sprout.svg`,
+    icon: `${process.env.NEXT_PUBLIC_BASE_PATH || ""}/sprout.svg`,
   },
 };
 
