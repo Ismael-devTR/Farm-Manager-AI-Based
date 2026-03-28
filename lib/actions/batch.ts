@@ -6,6 +6,8 @@ import { prisma } from "@/lib/prisma";
 import { BatchStatus } from "@/app/generated/prisma/enums";
 import { getLocale } from "@/lib/get-locale";
 import { getDictionary } from "@/locales";
+import { getSession } from "@/lib/session";
+import { canWrite } from "@/lib/authorization";
 
 export type ActionState = { error?: string; batchId?: string; success?: boolean };
 
@@ -14,7 +16,11 @@ export async function createBatch(
   formData: FormData
 ): Promise<ActionState> {
   const locale = await getLocale();
-  const t = getDictionary(locale).batchForm;
+  const dict = getDictionary(locale);
+  const t = dict.batchForm;
+
+  const session = await getSession();
+  if (!session || !canWrite(session.role)) return { error: dict.common.errorUnauthorized };
 
   const name = formData.get("name") as string;
   const entryDate = formData.get("entryDate") as string;
@@ -42,7 +48,11 @@ export async function updateBatch(
   formData: FormData
 ): Promise<ActionState> {
   const locale = await getLocale();
-  const t = getDictionary(locale).batchForm;
+  const dict = getDictionary(locale);
+  const t = dict.batchForm;
+
+  const session = await getSession();
+  if (!session || !canWrite(session.role)) return { error: dict.common.errorUnauthorized };
 
   const name = formData.get("name") as string;
   const entryDate = formData.get("entryDate") as string;
@@ -67,12 +77,16 @@ export async function updateBatch(
 }
 
 export async function updateBatchStatus(batchId: string, status: BatchStatus): Promise<void> {
+  const session = await getSession();
+  if (!session || !canWrite(session.role)) return;
   await prisma.batch.update({ where: { id: batchId }, data: { status } });
   revalidatePath(`/batches/${batchId}`);
   revalidatePath("/batches");
 }
 
 export async function deleteBatch(batchId: string): Promise<void> {
+  const session = await getSession();
+  if (!session || !canWrite(session.role)) return;
   await prisma.$transaction([
     prisma.vaccinationSchedule.deleteMany({ where: { batchId } }),
     prisma.expense.deleteMany({ where: { batchId } }),

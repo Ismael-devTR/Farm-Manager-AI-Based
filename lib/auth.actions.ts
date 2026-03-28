@@ -27,7 +27,7 @@ export async function login(
   const valid = await compare(password, user.passwordHash);
   if (!valid) return { error: t.errorInvalid };
 
-  await createSession({ userId: user.id, email: user.email, name: user.name });
+  await createSession({ userId: user.id, email: user.email, name: user.name, role: user.role });
   redirect("/dashboard");
 }
 

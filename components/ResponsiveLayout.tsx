@@ -10,9 +10,10 @@ type Props = {
   userName: string;
   locale: Locale;
   dict: Dictionary;
+  role: string;
 };
 
-export default function ResponsiveLayout({ children, userName, locale, dict }: Props) {
+export default function ResponsiveLayout({ children, userName, locale, dict, role }: Props) {
   const [open, setOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
 
@@ -24,6 +25,7 @@ export default function ResponsiveLayout({ children, userName, locale, dict }: P
           userName={userName}
           locale={locale}
           dict={dict}
+          role={role}
           onChatToggle={() => setChatOpen((v) => !v)}
         />
       </div>
@@ -40,6 +42,7 @@ export default function ResponsiveLayout({ children, userName, locale, dict }: P
               userName={userName}
               locale={locale}
               dict={dict}
+              role={role}
               onClose={() => setOpen(false)}
               onChatToggle={() => {
                 setOpen(false);

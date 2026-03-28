@@ -3,8 +3,12 @@ import { prisma } from "@/lib/prisma";
 import { computeBatchMetrics } from "@/lib/calculations";
 import { getLocale } from "@/lib/get-locale";
 import { getDictionary } from "@/locales";
+import { getSession } from "@/lib/session";
+import { canWrite } from "@/lib/authorization";
 
 export default async function DashboardPage() {
+  const session = await getSession();
+  const writable = session ? canWrite(session.role) : false;
   const locale = await getLocale();
   const dict = getDictionary(locale);
   const t = dict.dashboard;
@@ -28,9 +32,11 @@ export default async function DashboardPage() {
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">{t.title}</h1>
-        <Link href="/batches/new" className="bg-green-600 hover:bg-green-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
-          {t.newBatch}
-        </Link>
+        {writable && (
+          <Link href="/batches/new" className="bg-green-600 hover:bg-green-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
+            {t.newBatch}
+          </Link>
+        )}
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -42,8 +48,8 @@ export default async function DashboardPage() {
 
       {batches.length === 0 ? (
         <div className="bg-white rounded-xl border border-gray-200 p-8 text-center text-sm text-gray-500">
-          {t.noBatches}{" "}
-          <Link href="/batches/new" className="text-green-700 hover:underline font-medium">{t.createOne}</Link>
+          {t.noBatches}
+          {writable && <>{" "}<Link href="/batches/new" className="text-green-700 hover:underline font-medium">{t.createOne}</Link></>}
         </div>
       ) : (
         <div className="space-y-4">

@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { getLocale } from "@/lib/get-locale";
 import { getDictionary } from "@/locales";
+import { getSession } from "@/lib/session";
+import { canWrite } from "@/lib/authorization";
 
 export type ActionState = { error?: string; success?: boolean };
 
@@ -13,7 +15,11 @@ export async function addFeedRecord(
   formData: FormData
 ): Promise<ActionState> {
   const locale = await getLocale();
-  const t = getDictionary(locale).feedForm;
+  const dict = getDictionary(locale);
+  const t = dict.feedForm;
+
+  const session = await getSession();
+  if (!session || !canWrite(session.role)) return { error: dict.common.errorUnauthorized };
 
   const date = formData.get("date") as string;
   const feedType = formData.get("feedType") as string;
@@ -40,7 +46,11 @@ export async function updateFeedRecord(
   formData: FormData
 ): Promise<ActionState> {
   const locale = await getLocale();
-  const t = getDictionary(locale).feedForm;
+  const dict = getDictionary(locale);
+  const t = dict.feedForm;
+
+  const session = await getSession();
+  if (!session || !canWrite(session.role)) return { error: dict.common.errorUnauthorized };
 
   const date = formData.get("date") as string;
   const feedType = formData.get("feedType") as string;
@@ -62,6 +72,8 @@ export async function updateFeedRecord(
 }
 
 export async function deleteFeedRecord(id: string, batchId: string): Promise<void> {
+  const session = await getSession();
+  if (!session || !canWrite(session.role)) return;
   await prisma.feedRecord.delete({ where: { id } });
   revalidatePath(`/batches/${batchId}`);
 }

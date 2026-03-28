@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { getLocale } from "@/lib/get-locale";
 import { getDictionary } from "@/locales";
+import { getSession } from "@/lib/session";
+import { canWrite } from "@/lib/authorization";
 
 export type ActionState = { error?: string; success?: boolean };
 
@@ -13,7 +15,11 @@ export async function addWeightRecord(
   formData: FormData
 ): Promise<ActionState> {
   const locale = await getLocale();
-  const t = getDictionary(locale).weightForm;
+  const dict = getDictionary(locale);
+  const t = dict.weightForm;
+
+  const session = await getSession();
+  if (!session || !canWrite(session.role)) return { error: dict.common.errorUnauthorized };
 
   const recordDate = formData.get("recordDate") as string;
   const weekNumber = Number(formData.get("weekNumber"));
@@ -47,7 +53,11 @@ export async function updateWeightRecord(
   formData: FormData
 ): Promise<ActionState> {
   const locale = await getLocale();
-  const t = getDictionary(locale).weightForm;
+  const dict = getDictionary(locale);
+  const t = dict.weightForm;
+
+  const session = await getSession();
+  if (!session || !canWrite(session.role)) return { error: dict.common.errorUnauthorized };
 
   const recordDate = formData.get("recordDate") as string;
   const weekNumber = Number(formData.get("weekNumber"));
@@ -76,6 +86,8 @@ export async function updateWeightRecord(
 }
 
 export async function deleteWeightRecord(id: string, batchId: string): Promise<void> {
+  const session = await getSession();
+  if (!session || !canWrite(session.role)) return;
   await prisma.weightRecord.delete({ where: { id } });
   revalidatePath(`/batches/${batchId}`);
 }

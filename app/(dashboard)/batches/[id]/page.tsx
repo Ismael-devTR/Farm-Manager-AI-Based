@@ -23,6 +23,8 @@ import { getDictionary } from "@/locales";
 import ConfirmButton from "@/components/ConfirmButton";
 import EditButton from "@/components/EditButton";
 import EditBatchButton from "@/components/EditBatchButton";
+import { getSession } from "@/lib/session";
+import { canWrite } from "@/lib/authorization";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -35,6 +37,9 @@ export default async function BatchDetailPage({ params }: Props) {
   const ft = dict.feedForm;
   const et = dict.expenseForm;
   const st = dict.scheduleForm;
+
+  const session = await getSession();
+  const writable = session ? canWrite(session.role) : false;
 
   const batch = await prisma.batch.findUnique({
     where: { id },
@@ -70,34 +75,36 @@ export default async function BatchDetailPage({ params }: Props) {
             {batch.entryDate.toLocaleDateString()} · {batch.animalCount} {t.animalsSuffix} · {batch.birthWeeks}w {t.oldAtEntry}
           </p>
         </div>
-        <div className="flex gap-2">
-          <EditBatchButton
-            data={{
-              id: batch.id,
-              name: batch.name,
-              entryDate: fmtDate(batch.entryDate),
-              animalCount: batch.animalCount,
-              birthWeeks: batch.birthWeeks,
-              initialWeight: batch.initialWeight,
-              costPerAnimal: batch.costPerAnimal,
-              notes: batch.notes,
-            }}
-          />
-          {batch.status === "ACTIVE" && (
-            <ConfirmButton
-              action={async () => { "use server"; await updateBatchStatus(id, BatchStatus.SOLD); }}
-              message={dict.confirms.markAsSold}
-              label={t.markAsSold}
-              className="text-sm border border-gray-300 px-3 py-1.5 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+        {writable && (
+          <div className="flex gap-2">
+            <EditBatchButton
+              data={{
+                id: batch.id,
+                name: batch.name,
+                entryDate: fmtDate(batch.entryDate),
+                animalCount: batch.animalCount,
+                birthWeeks: batch.birthWeeks,
+                initialWeight: batch.initialWeight,
+                costPerAnimal: batch.costPerAnimal,
+                notes: batch.notes,
+              }}
             />
-          )}
-          <ConfirmButton
-            action={async () => { "use server"; await deleteBatch(id); }}
-            message={dict.confirms.deleteBatch}
-            label={dict.common.delete}
-            className="text-sm border border-red-200 text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50"
-          />
-        </div>
+            {batch.status === "ACTIVE" && (
+              <ConfirmButton
+                action={async () => { "use server"; await updateBatchStatus(id, BatchStatus.SOLD); }}
+                message={dict.confirms.markAsSold}
+                label={t.markAsSold}
+                className="text-sm border border-gray-300 px-3 py-1.5 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+              />
+            )}
+            <ConfirmButton
+              action={async () => { "use server"; await deleteBatch(id); }}
+              message={dict.confirms.deleteBatch}
+              label={dict.common.delete}
+              className="text-sm border border-red-200 text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50"
+            />
+          </div>
+        )}
       </div>
 
       {/* Cost summary */}
@@ -147,7 +154,7 @@ export default async function BatchDetailPage({ params }: Props) {
 
       {/* Weekly weights */}
       <Section title={t.weeklyWeights}>
-        <WeightForm batchId={id} />
+        {writable && <WeightForm batchId={id} />}
         {batch.weightRecords.length > 0 && (
           <div className="overflow-x-auto mt-4"><table className="w-full text-sm">
             <thead className="bg-gray-50 border-b border-gray-200">
@@ -157,7 +164,7 @@ export default async function BatchDetailPage({ params }: Props) {
                 <th className="text-right px-3 py-2 font-medium text-gray-600">{wt.totalCol}</th>
                 <th className="text-right px-3 py-2 font-medium text-gray-600">{wt.animalsCol}</th>
                 <th className="text-right px-3 py-2 font-medium text-gray-600">{wt.avgCol}</th>
-                <th />
+                {writable && <th />}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -168,27 +175,29 @@ export default async function BatchDetailPage({ params }: Props) {
                   <td className="px-3 py-2 text-right">{r.totalWeight}</td>
                   <td className="px-3 py-2 text-right">{r.animalCount}</td>
                   <td className="px-3 py-2 text-right">{(r.totalWeight / r.animalCount).toFixed(1)}</td>
-                  <td className="px-3 py-2 text-right space-x-2">
-                    <EditButton title={wt.weekCol + " " + r.weekNumber}>
-                      <WeightForm
-                        batchId={id}
-                        editData={{
-                          id: r.id,
-                          recordDate: fmtDate(r.recordDate),
-                          weekNumber: r.weekNumber,
-                          totalWeight: r.totalWeight,
-                          animalCount: r.animalCount,
-                          notes: r.notes,
-                        }}
+                  {writable && (
+                    <td className="px-3 py-2 text-right space-x-2">
+                      <EditButton title={wt.weekCol + " " + r.weekNumber}>
+                        <WeightForm
+                          batchId={id}
+                          editData={{
+                            id: r.id,
+                            recordDate: fmtDate(r.recordDate),
+                            weekNumber: r.weekNumber,
+                            totalWeight: r.totalWeight,
+                            animalCount: r.animalCount,
+                            notes: r.notes,
+                          }}
+                        />
+                      </EditButton>
+                      <ConfirmButton
+                        action={async () => { "use server"; await deleteWeightRecord(r.id, id); }}
+                        message={dict.confirms.deleteWeight}
+                        label={dict.common.delete}
+                        className="text-xs text-red-500 hover:underline"
                       />
-                    </EditButton>
-                    <ConfirmButton
-                      action={async () => { "use server"; await deleteWeightRecord(r.id, id); }}
-                      message={dict.confirms.deleteWeight}
-                      label={dict.common.delete}
-                      className="text-xs text-red-500 hover:underline"
-                    />
-                  </td>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
@@ -198,7 +207,7 @@ export default async function BatchDetailPage({ params }: Props) {
 
       {/* Feed records */}
       <Section title={`${t.feedConsumption} — ${metrics.totalFeedKg.toFixed(0)} kg ${t.totalSuffix} · $${metrics.totalFeedCost.toFixed(2)}`}>
-        <FeedForm batchId={id} />
+        {writable && <FeedForm batchId={id} />}
         {batch.feedRecords.length > 0 && (
           <div className="overflow-x-auto mt-4"><table className="w-full text-sm">
             <thead className="bg-gray-50 border-b border-gray-200">
@@ -208,7 +217,7 @@ export default async function BatchDetailPage({ params }: Props) {
                 <th className="text-right px-3 py-2 font-medium text-gray-600">{ft.qtyCol}</th>
                 <th className="text-right px-3 py-2 font-medium text-gray-600">{ft.costCol}</th>
                 <th className="text-right px-3 py-2 font-medium text-gray-600">{ft.totalCol}</th>
-                <th />
+                {writable && <th />}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -219,27 +228,29 @@ export default async function BatchDetailPage({ params }: Props) {
                   <td className="px-3 py-2 text-right">{r.quantityKg}</td>
                   <td className="px-3 py-2 text-right">{r.costPerKg.toFixed(2)}</td>
                   <td className="px-3 py-2 text-right font-medium">${(r.quantityKg * r.costPerKg).toFixed(2)}</td>
-                  <td className="px-3 py-2 text-right space-x-2">
-                    <EditButton title={ft.typeCol + ": " + r.feedType}>
-                      <FeedForm
-                        batchId={id}
-                        editData={{
-                          id: r.id,
-                          date: fmtDate(r.date),
-                          feedType: r.feedType,
-                          quantityKg: r.quantityKg,
-                          costPerKg: r.costPerKg,
-                          notes: r.notes,
-                        }}
+                  {writable && (
+                    <td className="px-3 py-2 text-right space-x-2">
+                      <EditButton title={ft.typeCol + ": " + r.feedType}>
+                        <FeedForm
+                          batchId={id}
+                          editData={{
+                            id: r.id,
+                            date: fmtDate(r.date),
+                            feedType: r.feedType,
+                            quantityKg: r.quantityKg,
+                            costPerKg: r.costPerKg,
+                            notes: r.notes,
+                          }}
+                        />
+                      </EditButton>
+                      <ConfirmButton
+                        action={async () => { "use server"; await deleteFeedRecord(r.id, id); }}
+                        message={dict.confirms.deleteFeed}
+                        label={dict.common.delete}
+                        className="text-xs text-red-500 hover:underline"
                       />
-                    </EditButton>
-                    <ConfirmButton
-                      action={async () => { "use server"; await deleteFeedRecord(r.id, id); }}
-                      message={dict.confirms.deleteFeed}
-                      label={dict.common.delete}
-                      className="text-xs text-red-500 hover:underline"
-                    />
-                  </td>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
@@ -249,7 +260,7 @@ export default async function BatchDetailPage({ params }: Props) {
 
       {/* Expenses */}
       <Section title={`${t.expensesSection} — $${metrics.totalExpenseCost.toFixed(2)} ${t.totalSuffix}`}>
-        <ExpenseForm batchId={id} />
+        {writable && <ExpenseForm batchId={id} />}
         {batch.expenses.length > 0 && (
           <div className="overflow-x-auto mt-4"><table className="w-full text-sm">
             <thead className="bg-gray-50 border-b border-gray-200">
@@ -258,7 +269,7 @@ export default async function BatchDetailPage({ params }: Props) {
                 <th className="text-left px-3 py-2 font-medium text-gray-600">{et.categoryCol}</th>
                 <th className="text-left px-3 py-2 font-medium text-gray-600">{et.descriptionCol}</th>
                 <th className="text-right px-3 py-2 font-medium text-gray-600">{et.amountCol}</th>
-                <th />
+                {writable && <th />}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -268,27 +279,29 @@ export default async function BatchDetailPage({ params }: Props) {
                   <td className="px-3 py-2"><span className="text-xs bg-gray-100 px-1.5 py-0.5 rounded">{e.category}</span></td>
                   <td className="px-3 py-2">{e.description}</td>
                   <td className="px-3 py-2 text-right font-medium">${e.amount.toFixed(2)}</td>
-                  <td className="px-3 py-2 text-right space-x-2">
-                    <EditButton title={et.descriptionCol + ": " + e.description}>
-                      <ExpenseForm
-                        batchId={id}
-                        editData={{
-                          id: e.id,
-                          date: fmtDate(e.date),
-                          category: e.category,
-                          description: e.description,
-                          amount: e.amount,
-                          notes: e.notes,
-                        }}
+                  {writable && (
+                    <td className="px-3 py-2 text-right space-x-2">
+                      <EditButton title={et.descriptionCol + ": " + e.description}>
+                        <ExpenseForm
+                          batchId={id}
+                          editData={{
+                            id: e.id,
+                            date: fmtDate(e.date),
+                            category: e.category,
+                            description: e.description,
+                            amount: e.amount,
+                            notes: e.notes,
+                          }}
+                        />
+                      </EditButton>
+                      <ConfirmButton
+                        action={async () => { "use server"; await deleteExpense(e.id, id); }}
+                        message={dict.confirms.deleteExpense}
+                        label={dict.common.delete}
+                        className="text-xs text-red-500 hover:underline"
                       />
-                    </EditButton>
-                    <ConfirmButton
-                      action={async () => { "use server"; await deleteExpense(e.id, id); }}
-                      message={dict.confirms.deleteExpense}
-                      label={dict.common.delete}
-                      className="text-xs text-red-500 hover:underline"
-                    />
-                  </td>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
@@ -298,7 +311,7 @@ export default async function BatchDetailPage({ params }: Props) {
 
       {/* Schedules */}
       <Section title={t.scheduleSection}>
-        <ScheduleForm batchId={id} />
+        {writable && <ScheduleForm batchId={id} />}
         {batch.vaccinationSchedules.length > 0 && (
           <div className="overflow-x-auto mt-4"><table className="w-full text-sm">
             <thead className="bg-gray-50 border-b border-gray-200">
@@ -307,7 +320,7 @@ export default async function BatchDetailPage({ params }: Props) {
                 <th className="text-left px-3 py-2 font-medium text-gray-600">{st.typeCol}</th>
                 <th className="text-left px-3 py-2 font-medium text-gray-600">{st.productCol}</th>
                 <th className="text-left px-3 py-2 font-medium text-gray-600">{st.statusCol}</th>
-                <th />
+                {writable && <th />}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -317,32 +330,40 @@ export default async function BatchDetailPage({ params }: Props) {
                   <td className="px-3 py-2"><span className="text-xs bg-gray-100 px-1.5 py-0.5 rounded">{s.type}</span></td>
                   <td className="px-3 py-2">{s.product}</td>
                   <td className="px-3 py-2">
-                    <form action={async () => { "use server"; await toggleScheduleComplete(s.id, id, !s.completed); }}>
-                      <button type="submit" className={`text-xs px-2 py-0.5 rounded-full font-medium ${s.completed ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"}`}>
+                    {writable ? (
+                      <form action={async () => { "use server"; await toggleScheduleComplete(s.id, id, !s.completed); }}>
+                        <button type="submit" className={`text-xs px-2 py-0.5 rounded-full font-medium ${s.completed ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"}`}>
+                          {s.completed ? st.done : st.pending}
+                        </button>
+                      </form>
+                    ) : (
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${s.completed ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"}`}>
                         {s.completed ? st.done : st.pending}
-                      </button>
-                    </form>
+                      </span>
+                    )}
                   </td>
-                  <td className="px-3 py-2 text-right space-x-2">
-                    <EditButton title={st.productCol + ": " + s.product}>
-                      <ScheduleForm
-                        batchId={id}
-                        editData={{
-                          id: s.id,
-                          scheduledDate: fmtDate(s.scheduledDate),
-                          type: s.type,
-                          product: s.product,
-                          notes: s.notes,
-                        }}
+                  {writable && (
+                    <td className="px-3 py-2 text-right space-x-2">
+                      <EditButton title={st.productCol + ": " + s.product}>
+                        <ScheduleForm
+                          batchId={id}
+                          editData={{
+                            id: s.id,
+                            scheduledDate: fmtDate(s.scheduledDate),
+                            type: s.type,
+                            product: s.product,
+                            notes: s.notes,
+                          }}
+                        />
+                      </EditButton>
+                      <ConfirmButton
+                        action={async () => { "use server"; await deleteSchedule(s.id, id); }}
+                        message={dict.confirms.deleteSchedule}
+                        label={dict.common.delete}
+                        className="text-xs text-red-500 hover:underline"
                       />
-                    </EditButton>
-                    <ConfirmButton
-                      action={async () => { "use server"; await deleteSchedule(s.id, id); }}
-                      message={dict.confirms.deleteSchedule}
-                      label={dict.common.delete}
-                      className="text-xs text-red-500 hover:underline"
-                    />
-                  </td>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>

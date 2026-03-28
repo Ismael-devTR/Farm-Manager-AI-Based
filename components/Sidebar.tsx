@@ -10,16 +10,18 @@ type Props = {
   userName: string;
   locale: Locale;
   dict: Dictionary;
+  role: string;
   onClose?: () => void;
   onChatToggle?: () => void;
 };
 
-export default function Sidebar({ userName, locale, dict, onClose, onChatToggle }: Props) {
+export default function Sidebar({ userName, locale, dict, role, onClose, onChatToggle }: Props) {
   const pathname = usePathname();
 
   const navItems = [
     { href: "/dashboard", label: dict.nav.dashboard },
     { href: "/batches", label: dict.nav.batches },
+    { href: "/settings", label: dict.nav.settings },
   ];
 
   return (

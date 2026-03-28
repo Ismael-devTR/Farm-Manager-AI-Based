@@ -5,6 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { ExpenseCategory } from "@/app/generated/prisma/enums";
 import { getLocale } from "@/lib/get-locale";
 import { getDictionary } from "@/locales";
+import { getSession } from "@/lib/session";
+import { canWrite } from "@/lib/authorization";
 
 export type ActionState = { error?: string; success?: boolean };
 
@@ -14,7 +16,11 @@ export async function addExpense(
   formData: FormData
 ): Promise<ActionState> {
   const locale = await getLocale();
-  const t = getDictionary(locale).expenseForm;
+  const dict = getDictionary(locale);
+  const t = dict.expenseForm;
+
+  const session = await getSession();
+  if (!session || !canWrite(session.role)) return { error: dict.common.errorUnauthorized };
 
   const date = formData.get("date") as string;
   const category = formData.get("category") as ExpenseCategory;
@@ -41,7 +47,11 @@ export async function updateExpense(
   formData: FormData
 ): Promise<ActionState> {
   const locale = await getLocale();
-  const t = getDictionary(locale).expenseForm;
+  const dict = getDictionary(locale);
+  const t = dict.expenseForm;
+
+  const session = await getSession();
+  if (!session || !canWrite(session.role)) return { error: dict.common.errorUnauthorized };
 
   const date = formData.get("date") as string;
   const category = formData.get("category") as ExpenseCategory;
@@ -63,6 +73,8 @@ export async function updateExpense(
 }
 
 export async function deleteExpense(id: string, batchId: string): Promise<void> {
+  const session = await getSession();
+  if (!session || !canWrite(session.role)) return;
   await prisma.expense.delete({ where: { id } });
   revalidatePath(`/batches/${batchId}`);
 }

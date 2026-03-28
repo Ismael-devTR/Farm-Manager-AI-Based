@@ -18,7 +18,7 @@ export default async function DashboardLayout({
 
   return (
     <LocaleProvider dict={dict}>
-      <ResponsiveLayout userName={session.name} locale={locale} dict={dict}>
+      <ResponsiveLayout userName={session.name} locale={locale} dict={dict} role={session.role}>
         {children}
       </ResponsiveLayout>
     </LocaleProvider>

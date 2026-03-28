@@ -8,6 +8,7 @@ export type SessionPayload = {
   userId: string;
   email: string;
   name: string;
+  role: string;
 };
 
 export async function encrypt(payload: SessionPayload): Promise<string> {

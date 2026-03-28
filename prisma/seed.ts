@@ -3,6 +3,7 @@ import {PrismaPg} from '@prisma/adapter-pg';
 import {hash} from 'bcryptjs';
 import dotenv from 'dotenv';
 import {existsSync} from 'fs';
+import type {UserRole} from '../app/generated/prisma/enums';
 
 dotenv.config();
 if (existsSync('.env.development')) {
@@ -15,16 +16,18 @@ function requireEnv(key: string): string {
   throw new Error(`Missing required env var ${key}. Set it in .env or secrets file.`);
 }
 
-const SEED_USERS = [
+const SEED_USERS: {name: string; email: string; password: string; role: UserRole}[] = [
   {
     name: 'Admin',
     email: requireEnv('FM_SEED_ADMIN_EMAIL'),
     password: requireEnv('FM_SEED_ADMIN_PASSWORD'),
+    role: 'ADMIN',
   },
   {
     name: 'Operator',
     email: requireEnv('FM_SEED_OPERATOR_EMAIL'),
     password: requireEnv('FM_SEED_OPERATOR_PASSWORD'),
+    role: 'EDITOR',
   },
 ];
 
@@ -40,12 +43,16 @@ async function main() {
       });
 
       if (existing) {
-        console.log(`  ⏭  ${u.name} (${u.email}) — already exists, skipped`);
+        await prisma.user.update({
+          where: {email: u.email},
+          data: {role: u.role},
+        });
+        console.log(`  ⏭  ${u.name} (${u.email}) — already exists, role updated to ${u.role}`);
         continue;
       }
 
       await prisma.user.create({
-        data: {name: u.name, email: u.email, passwordHash},
+        data: {name: u.name, email: u.email, passwordHash, role: u.role},
       });
       console.log(`  ✅ ${u.name} (${u.email}) — created`);
     }

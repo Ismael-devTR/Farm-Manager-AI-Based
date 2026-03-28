@@ -2,6 +2,8 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getLocale } from "@/lib/get-locale";
 import { getDictionary } from "@/locales";
+import { getSession } from "@/lib/session";
+import { canWrite } from "@/lib/authorization";
 
 const statusColor: Record<string, string> = {
   ACTIVE: "bg-green-100 text-green-800",
@@ -10,6 +12,8 @@ const statusColor: Record<string, string> = {
 };
 
 export default async function BatchesPage() {
+  const session = await getSession();
+  const writable = session ? canWrite(session.role) : false;
   const locale = await getLocale();
   const t = getDictionary(locale).batches;
 
@@ -22,9 +26,11 @@ export default async function BatchesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">{t.title}</h1>
-        <Link href="/batches/new" className="bg-green-600 hover:bg-green-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
-          {t.newBatch}
-        </Link>
+        {writable && (
+          <Link href="/batches/new" className="bg-green-600 hover:bg-green-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
+            {t.newBatch}
+          </Link>
+        )}
       </div>
 
       {batches.length === 0 ? (
